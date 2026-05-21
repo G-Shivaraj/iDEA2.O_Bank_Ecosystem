@@ -125,6 +125,28 @@ export const redteamApi = {
     client.post('/redteam/trigger', { scenario }).then(r => r.data),
 };
 
+// ── Gen-AI Threat Intelligence ────────────────────────────────────────────────
+export const genaiApi = {
+  /**
+   * Run Gen-AI analysis on the full CVE dataset.
+   * Returns { analysis: string, dataset_size: number, generated_at: string }
+   */
+  analyseThreats: () =>
+    client.post('/genai/analyse-threats').then(r => r.data),
+
+  /**
+   * Generate a remediation playbook for a specific alert.
+   * Accepts any alert object and maps to the legacy /playbooks/generate API.
+   * @param {{ cve_id?: string, asset_id?: string, technique_id?: string, message?: string }} alert
+   */
+  generatePlaybookFromAlert: (alert) =>
+    client.post('/playbooks/generate', {
+      cve_id:         alert.cve_id || 'CVE-UNKNOWN',
+      asset_name:     alert.asset_id || 'Unknown Asset',
+      technique_name: alert.technique_id || 'T1190',
+    }).then(r => r.data),
+};
+
 export default client;
 
 /* ─────────────────────────────────────────────────────────────────────────────

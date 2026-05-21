@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 
 # Local imports
-from api import routes_graph, routes_alerts, routes_playbook, routes_redteam
+from api import routes_graph, routes_alerts, routes_playbook, routes_redteam, routes_genai
 from graph.neo4j_client import Neo4jClient
 from graph.graph_builder import GraphBuilder
 
@@ -40,6 +40,10 @@ app.include_router(routes_playbook.router, prefix="/api/playbook")
 app.include_router(routes_playbook.router, prefix="/api/playbooks")
 
 app.include_router(routes_redteam.router, prefix="/api")
+
+# Gen-AI Threat Intelligence
+app.include_router(routes_genai.router, prefix="/api")
+
 
 
 @app.on_event("startup")

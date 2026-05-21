@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, Bell, CheckCircle, Eye, EyeOff, Filter, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, Bell, CheckCircle, Eye, EyeOff, Filter, RefreshCw, AlertTriangle, BookOpen, Loader2 } from 'lucide-react';
 import client, { alertsApi } from '../api/client';
+import PlaybookModal from './PlaybookModal';
 
 export default function AlertPanel() {
   const [alerts, setAlerts] = useState([]);
@@ -9,6 +10,8 @@ export default function AlertPanel() {
   const [refreshing, setRefreshing] = useState(false);
   const [filterSeverity, setFilterSeverity] = useState('ALL');
   const [filterStatus, setFilterStatus] = useState('UNRESOLVED');
+  const [playbookAlert, setPlaybookAlert] = useState(null);
+  const [playbookLoading, setPlaybookLoading] = useState(null); // holds alert.id when loading
 
   const fetchAlerts = (silent = false) => {
     if (!silent) setLoading(true);
@@ -52,6 +55,10 @@ export default function AlertPanel() {
     } catch (err) {
       console.error("Resolve failed:", err);
     }
+  };
+
+  const handleGeneratePlaybook = (alert) => {
+    setPlaybookAlert(alert);
   };
 
   const getSeverityBadge = (severity) => {
@@ -257,7 +264,16 @@ export default function AlertPanel() {
                   </div>
 
                   {/* Actions footer */}
-                  <div className="pt-4 border-t border-slate-800/60 flex justify-end gap-3 w-full mt-2">
+                  <div className="pt-4 border-t border-slate-800/60 flex flex-wrap justify-end gap-3 w-full mt-2">
+                    {/* Generate Playbook — always visible */}
+                    <button
+                      onClick={() => handleGeneratePlaybook(alert)}
+                      className="px-4 py-2 bg-violet-600/15 hover:bg-violet-600/30 border border-violet-500/30 hover:border-violet-500/60 text-violet-300 hover:text-violet-200 rounded-lg transition-all text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-[0_0_8px_rgba(139,92,246,0.2)] hover:shadow-[0_0_16px_rgba(139,92,246,0.35)]"
+                    >
+                      <BookOpen size={14} />
+                      Generate Playbook
+                    </button>
+
                     {alert.status === 'UNRESOLVED' && (
                       <button
                         onClick={() => handleAcknowledge(alert.id)}
@@ -297,6 +313,16 @@ export default function AlertPanel() {
           )}
         </div>
       )}
+
+      {/* Playbook Modal */}
+      <AnimatePresence>
+        {playbookAlert && (
+          <PlaybookModal
+            alert={playbookAlert}
+            onClose={() => setPlaybookAlert(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
