@@ -1,5 +1,6 @@
 import uvicorn
 import logging
+from datetime import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,7 +34,11 @@ app.add_middleware(
 # Register API routes
 app.include_router(routes_graph.router, prefix="/api")
 app.include_router(routes_alerts.router, prefix="/api")
-app.include_router(routes_playbook.router, prefix="/api")
+
+# Support both /api/playbook and /api/playbooks for perfect client/spec compatibility
+app.include_router(routes_playbook.router, prefix="/api/playbook")
+app.include_router(routes_playbook.router, prefix="/api/playbooks")
+
 app.include_router(routes_redteam.router, prefix="/api")
 
 
@@ -43,11 +48,22 @@ def startup_event():
 
     try:
         db = Neo4jClient()
-        builder = GraphBuilder(db)
-        builder.build_full_graph()
+        db.setup_constraints_and_indexes()
+        
+        # Check node counts to verify if the graph is empty
+        counts = db.get_node_counts()
+        total_nodes = sum(counts.values()) if counts else 0
+        logger.info(f"Current graph node counts: {counts} (Total: {total_nodes} nodes)")
+
+        if total_nodes == 0:
+            logger.info("Graph is empty. Running build_full_graph() to seed initial data...")
+            builder = GraphBuilder(db)
+            builder.build_full_graph()
+        else:
+            logger.info("Graph is already populated. Skipping automatic rebuild pipeline.")
 
     except Exception as e:
-        logger.error(f"Failed to synchronize Knowledge Graph: {e}")
+        logger.error(f"Failed to initialize or synchronize Knowledge Graph: {e}")
 
 
 @app.get("/")
@@ -57,6 +73,27 @@ def read_root():
         "status": "Online",
         "genai_enabled": bool(settings.GEMINI_API_KEY),
         "docs_url": "/docs"
+    }
+
+
+@app.get("/health")
+@app.get("/api/health")
+def health_check():
+    """
+    Returns API health and Neo4j database state.
+    """
+    db_status = "unknown"
+    try:
+        db = Neo4jClient()
+        db_status = "mock" if db.mock_mode else "connected"
+    except Exception as exc:
+        db_status = f"error: {str(exc)}"
+
+    return {
+        "status": "Healthy",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "neo4j": db_status,
+        "genai_enabled": bool(settings.GEMINI_API_KEY)
     }
 
 

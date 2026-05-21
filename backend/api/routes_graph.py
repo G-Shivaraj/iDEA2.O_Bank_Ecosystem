@@ -45,56 +45,96 @@ class RiskQuery(BaseModel):
 # Existing endpoints (kept intact for frontend compatibility)
 # ─────────────────────────────────────────────────────────────────────────────
 
-@router.get("/nodes", summary="All graph nodes (react-force-graph format)")
+@router.get("/nodes", summary="All graph nodes & links (visualization format)")
 def get_graph_nodes():
     """
-    Returns every node in the Knowledge Graph formatted for react-force-graph.
-    Label is inferred from node properties when not explicitly stored.
+    Returns unified graph payload containing both nodes and links formatted
+    for react-force-graph and standard visualization tools.
     """
     try:
+        # Get nodes
         results = db_client.run_query("MATCH (n) RETURN n")
         nodes = []
         for record in results:
             node = record.get("n", {})
             if not node:
                 continue
+            
+            # Infer label (class type)
             label = (
                 node.get("label")
-                or ("Vulnerability" if "cve_id"       in node else
-                    "Technique"     if "technique_id" in node else
+                or ("Vulnerability" if "cve_id" in node else
+                    "Technique" if "technique_id" in node else
                     "Asset")
             )
+            node_id = node.get("id") or node.get("cve_id") or node.get("technique_id")
+            
             nodes.append({
-                "id":         node.get("id") or node.get("cve_id") or node.get("technique_id"),
-                "name":       node.get("name") or node.get("cve_id") or node.get("technique_id"),
-                "label":      label,
+                "id": node_id,
+                "label": label,
+                "type": node.get("type") or label,
+                "name": node.get("name") or node_id,
                 "properties": node,
             })
-        return nodes
+            
+        # Get links
+        if db_client.mock_mode:
+            links = [
+                {"source": r["from"], "target": r["to"], "type": r["type"]}
+                for r in db_client.mock_relationships
+            ]
+        else:
+            link_results = db_client.run_query(
+                "MATCH (a)-[r]->(b) "
+                "RETURN a.id AS src_id, a.cve_id AS src_cve, a.technique_id AS src_tech, "
+                "       b.id AS tgt_id, b.cve_id AS tgt_cve, b.technique_id AS tgt_tech, "
+                "       type(r) AS rel"
+            )
+            links = []
+            for rec in link_results:
+                src = rec.get("src_id") or rec.get("src_cve") or rec.get("src_tech")
+                tgt = rec.get("tgt_id") or rec.get("tgt_cve") or rec.get("tgt_tech")
+                if src and tgt:
+                    links.append({
+                        "source": src,
+                        "target": tgt,
+                        "type": rec.get("rel"),
+                    })
+            
+        return {
+            "nodes": nodes,
+            "links": links
+        }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
 
 @router.get("/links", summary="All graph relationships")
 def get_graph_links():
-    """Returns all directed edges in the Knowledge Graph."""
+    """Returns all directed edges in the Knowledge Graph (kept for backward compatibility)."""
     try:
         if db_client.mock_mode:
             return [
                 {"source": r["from"], "target": r["to"], "type": r["type"]}
                 for r in db_client.mock_relationships
             ]
-        results = db_client.run_query(
-            "MATCH (a)-[r]->(b) RETURN a.id AS src, b.id AS tgt, type(r) AS rel"
+        link_results = db_client.run_query(
+            "MATCH (a)-[r]->(b) "
+            "RETURN a.id AS src_id, a.cve_id AS src_cve, a.technique_id AS src_tech, "
+            "       b.id AS tgt_id, b.cve_id AS tgt_cve, b.technique_id AS tgt_tech, "
+            "       type(r) AS rel"
         )
-        return [
-            {
-                "source": rec.get("src"),
-                "target": rec.get("tgt"),
-                "type":   rec.get("rel"),
-            }
-            for rec in results
-        ]
+        links = []
+        for rec in link_results:
+            src = rec.get("src_id") or rec.get("src_cve") or rec.get("src_tech")
+            tgt = rec.get("tgt_id") or rec.get("tgt_cve") or rec.get("tgt_tech")
+            if src and tgt:
+                links.append({
+                    "source": src,
+                    "target": tgt,
+                    "type": rec.get("rel"),
+                })
+        return links
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

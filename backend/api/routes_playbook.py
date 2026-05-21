@@ -17,7 +17,13 @@ from typing import Any, Dict, List, Optional
 from genai.playbook_gen import PlaybookGenerator
 from genai.rca_gen import RCAGenerator
 
-router = APIRouter(prefix="/playbooks", tags=["GenAI Orchestration Playbooks"])
+router = APIRouter(tags=["GenAI Orchestration Playbooks"])
+
+# In-memory thread-safe history database for tracking generated GenAI items
+import threading
+from datetime import datetime
+history_lock = threading.Lock()
+playbook_history = []
 
 # Module-level singletons — one Gemini client per worker
 playbook_engine = PlaybookGenerator()
@@ -112,6 +118,15 @@ def create_playbook(request: LegacyPlaybookRequest):
             asset_name=request.asset_name,
             technique_name=request.technique_name,
         )
+        item = {
+            "id": f"playbook_{datetime.now().strftime('%Y%m%d%H%M%S')}_{request.cve_id}",
+            "timestamp": datetime.now().isoformat(),
+            "type": "legacy_playbook",
+            "target": request.cve_id,
+            "result": {"playbook": playbook}
+        }
+        with history_lock:
+            playbook_history.insert(0, item)
         return {"playbook": playbook}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -131,10 +146,21 @@ def create_remediation_playbook(request: RemediationRequest):
     Falls back gracefully if Gemini API is unavailable.
     """
     try:
-        return playbook_engine.generate_remediation_playbook(
+        result = playbook_engine.generate_remediation_playbook(
             cve_data=request.cve_data,
             affected_assets=request.affected_assets,
         )
+        cve_id = request.cve_data.get("cveId") or request.cve_data.get("cve_id", "UNKNOWN")
+        item = {
+            "id": f"playbook_{datetime.now().strftime('%Y%m%d%H%M%S')}_{cve_id}",
+            "timestamp": datetime.now().isoformat(),
+            "type": "remediation_playbook",
+            "target": cve_id,
+            "result": result
+        }
+        with history_lock:
+            playbook_history.insert(0, item)
+        return result
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -150,6 +176,16 @@ def create_security_policy(request: SecurityPolicyRequest):
     """
     try:
         policy = playbook_engine.generate_security_policy(request.technique_data)
+        tech_id = request.technique_data.get("techniqueId") or request.technique_data.get("technique_id", "T????")
+        item = {
+            "id": f"policy_{datetime.now().strftime('%Y%m%d%H%M%S')}_{tech_id}",
+            "timestamp": datetime.now().isoformat(),
+            "type": "security_policy",
+            "target": tech_id,
+            "result": {"policy": policy}
+        }
+        with history_lock:
+            playbook_history.insert(0, item)
         return {"policy": policy}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -172,8 +208,20 @@ def generate_rca(request: IncidentDataRequest | LegacyRCARequest):
     try:
         if isinstance(request, LegacyRCARequest):
             rca_report = rca_engine.generate_rca_report(request.alert_sequence)
+            incident_id = f"INC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
         else:
             rca_report = rca_engine.generate_rca_report(request.model_dump())
+            incident_id = request.incidentId
+            
+        item = {
+            "id": f"rca_{datetime.now().strftime('%Y%m%d%H%M%S')}_{incident_id}",
+            "timestamp": datetime.now().isoformat(),
+            "type": "rca_report",
+            "target": incident_id,
+            "result": rca_report
+        }
+        with history_lock:
+            playbook_history.insert(0, item)
         return {"rca_report": rca_report}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -190,6 +238,28 @@ def create_ir_draft(request: IRDraftRequest):
     """
     try:
         draft = rca_engine.generate_incident_response_draft(request.alert_data)
+        alert_id = request.alert_data.get("id", "ALERT-???")
+        item = {
+            "id": f"ir_{datetime.now().strftime('%Y%m%d%H%M%S')}_{alert_id}",
+            "timestamp": datetime.now().isoformat(),
+            "type": "incident_response_draft",
+            "target": alert_id,
+            "result": {"ir_draft": draft}
+        }
+        with history_lock:
+            playbook_history.insert(0, item)
         return {"ir_draft": draft}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get(
+    "/history",
+    summary="Get generated playbooks and RCA history",
+)
+def get_playbook_history():
+    """
+    Returns the list of previously generated playbooks, policies, RCAs, and IR drafts.
+    """
+    with history_lock:
+        return playbook_history

@@ -15,7 +15,12 @@ const client = axios.create({
 export const graphApi = {
   /** All nodes formatted for react-force-graph */
   getNodes: () =>
-    client.get('/graph/nodes').then(r => r.data),
+    client.get('/graph/nodes').then(r => {
+      if (r.data && typeof r.data === 'object' && 'nodes' in r.data) {
+        return r.data.nodes;
+      }
+      return r.data;
+    }),
 
   /** All directed relationships */
   getLinks: () =>

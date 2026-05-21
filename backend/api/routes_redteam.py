@@ -1,9 +1,10 @@
+import asyncio
+import uuid
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any
 from redteam.simulator import RedTeamSimulator
 from api.routes_alerts import alerts_store
-import uuid
 
 router = APIRouter(prefix="/redteam", tags=["Red Team Attack Simulator"])
 simulator = RedTeamSimulator()
@@ -11,21 +12,25 @@ simulator = RedTeamSimulator()
 class SimulationRequest(BaseModel):
     scenario: str
 
-@router.get("/scenarios")
+@router.get("/scenarios", summary="Get all breach scenarios")
 def get_scenarios():
     """
     Lists available pre-defined breach simulation scenarios.
     """
     return {"scenarios": simulator.get_available_scenarios()}
 
-@router.post("/trigger")
-def trigger_breach(request: SimulationRequest):
+@router.post("/simulate", summary="Trigger red team breach simulation (standard)")
+async def simulate_breach(request: SimulationRequest):
     """
-    Triggers the selected red team simulation and streams the events into the SOC logs dashboard.
+    Simulates a red team breach campaign with a realistic 2-second delay
+    and injects the resulting multi-stage events as active alerts.
     """
     scenarios = simulator.get_available_scenarios()
     if request.scenario not in scenarios:
         raise HTTPException(status_code=400, detail="Scenario not supported.")
+        
+    # Introduce 2-second simulation delay
+    await asyncio.sleep(2)
         
     simulated_events = simulator.start_simulation(request.scenario)
     
@@ -52,3 +57,11 @@ def trigger_breach(request: SimulationRequest):
         "alerts_injected": len(added_alerts),
         "injected_details": added_alerts
     }
+
+@router.post("/trigger", summary="Trigger red team breach simulation (frontend compatible)")
+async def trigger_breach(request: SimulationRequest):
+    """
+    Backwards compatible endpoint for the React frontend dashboard that invokes
+    the breach simulation with the standard 2-second delay.
+    """
+    return await simulate_breach(request)
