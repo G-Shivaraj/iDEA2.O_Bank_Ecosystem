@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
+import { Volume2, VolumeX } from 'lucide-react';
+import AttackReplayTimeline from './AttackReplayTimeline';
+import { voiceNarrator } from '../utils/voiceNarrator';
 
 // ─────────────────────────────────────────────
 // DATA DEFINITIONS
@@ -135,19 +138,19 @@ const nowStr = () => {
 // High-fidelity node labels rendered as Billboard Sprites in Three.js
 const createLabelSprite = (text, colorHex) => {
   const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
+  canvas.width = 400;
+  canvas.height = 100;
   const ctx = canvas.getContext('2d');
 
   // Semi-transparent dark background
   ctx.fillStyle = 'rgba(10, 14, 26, 0.85)';
   ctx.strokeStyle = colorHex;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 4;
   
   // Rounded box
-  const r = 8;
-  const w = 256;
-  const h = 64;
+  const r = 10;
+  const w = 400;
+  const h = 100;
   ctx.beginPath();
   ctx.moveTo(r, 0);
   ctx.lineTo(w - r, 0);
@@ -164,7 +167,51 @@ const createLabelSprite = (text, colorHex) => {
 
   // Premium, highly legible typography
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 20px "Inter", "Segoe UI", sans-serif';
+  ctx.font = 'bold 28px "Inter", "Segoe UI", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, w / 2, h / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(4.0, 1.0, 1);
+  return sprite;
+};
+
+// Cinematic 3D status badge floating plate
+const createBadgeSprite = (text, colorHex) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 240;
+  canvas.height = 60;
+  const ctx = canvas.getContext('2d');
+
+  // Background and border
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+  ctx.strokeStyle = colorHex;
+  ctx.lineWidth = 3;
+  
+  const r = 6;
+  const w = 240;
+  const h = 60;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(w - r, 0);
+  ctx.quadraticCurveTo(w, 0, w, r);
+  ctx.lineTo(w, h - r);
+  ctx.quadraticCurveTo(w, h, w - r, h);
+  ctx.lineTo(r, h);
+  ctx.quadraticCurveTo(0, h, 0, h - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Monospace badge typography
+  ctx.fillStyle = colorHex;
+  ctx.font = '900 16px "JetBrains Mono", "Courier New", monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, w / 2, h / 2);
@@ -177,10 +224,66 @@ const createLabelSprite = (text, colorHex) => {
   return sprite;
 };
 
+// Scenario path phase splitter
+const parsePathPhases = (path) => {
+  if (!path || path.length === 0) return null;
+
+  const isInsider = path[0] !== 'internet';
+  let gatewayNode = '';
+  let perimeterEdges = [];
+  let intermediateNodes = [];
+  let lateralEdges = [];
+  let targetNode = path[path.length - 1];
+  let targetEdges = [];
+
+  if (isInsider) {
+    gatewayNode = path[0];
+    const targetIdx = path.length - 1;
+    
+    for (let i = 1; i < targetIdx; i++) {
+      intermediateNodes.push(path[i]);
+    }
+    for (let i = 0; i < targetIdx - 1; i++) {
+      lateralEdges.push([path[i], path[i+1]]);
+    }
+    targetEdges.push([path[targetIdx - 1], targetNode]);
+  } else {
+    gatewayNode = path[2] || path[0];
+    perimeterEdges.push([path[0], path[1]]);
+    if (path[2]) {
+      perimeterEdges.push([path[1], path[2]]);
+    }
+    
+    const gatewayIdx = path.indexOf(gatewayNode);
+    const targetIdx = path.length - 1;
+    
+    for (let i = gatewayIdx + 1; i < targetIdx; i++) {
+      intermediateNodes.push(path[i]);
+    }
+    for (let i = gatewayIdx; i < targetIdx - 1; i++) {
+      lateralEdges.push([path[i], path[i+1]]);
+    }
+    targetEdges.push([path[targetIdx - 1], targetNode]);
+  }
+
+  return {
+    gatewayNode,
+    perimeterEdges,
+    intermediateNodes,
+    lateralEdges,
+    targetNode,
+    targetEdges
+  };
+};
+
+
 // ─────────────────────────────────────────────
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
 export default function DigitalTwin() {
+  // --- TEMPORARY MOUNT DEBUG LOGS ---
+  console.log("%c[DigitalTwin] Mounting/Rendering...", "color: #3b82f6; font-weight: bold;");
+
   const mountRef   = useRef(null);
   const sceneRef   = useRef(null);
   const cameraRef  = useRef(null);
@@ -195,8 +298,12 @@ export default function DigitalTwin() {
   const zonePlanesRef = useRef([]);       // zone label objects
   const orbitRef   = useRef({ theta: 0.3, phi: Math.PI/2.8, radius: 18, dragging: false, lastX: 0, lastY: 0 }); // Camera closer (radius 18)
   const clockRef   = useRef(0);
+  const simTimeRef = useRef(0);
+  const compromisedBadgesRef = useRef({});
+  const remediationShieldsRef = useRef([]);
 
   const [layers, setLayers] = useState({ network: true, assets: false, identities: false, vulns: false, logs: false });
+  const [voiceState, setVoiceState] = useState({ isMuted: false, isSpeaking: false });
   const [selectedScenario, setSelectedScenario] = useState('credential');
   const [simState, setSimState] = useState('idle');   // idle | running | breach | remediated
   const [defcon, setDefcon] = useState(5);
@@ -221,16 +328,148 @@ export default function DigitalTwin() {
   const breachTimerRef = useRef(null);
   const remTimerRef = useRef(null);
 
+  // Sync ref with state
+  useEffect(() => {
+    simStateRef.current = simState;
+    console.log(`%c[DigitalTwin] State Synced -> simStateRef: ${simState}`, "color: #a855f7; font-weight: bold;");
+  }, [simState]);
+
+  // Subscribe to voice state changes
+  useEffect(() => {
+    const unsubscribe = voiceNarrator.subscribe(state => {
+      setVoiceState(state);
+    });
+    return unsubscribe;
+  }, []);
+
+  // ── AI Voice Narration Triggers ──────────────────────────────────────────
+  useEffect(() => {
+    if (simState === 'running') {
+      voiceNarrator.cancel();
+      voiceNarrator.speak("Critical threat detected. CVE-2026-1043 is being actively exploited. Predicted attack path targets the core banking database.");
+      voiceNarrator.speak("Attack propagation detected. Monitoring lateral movement.");
+    } else if (simState === 'breach') {
+      voiceNarrator.speak("Critical infrastructure under attack.");
+    } else if (simState === 'remediated') {
+      voiceNarrator.speak("AI remediation successful. Threat contained.");
+    } else if (simState === 'idle') {
+      voiceNarrator.cancel();
+    }
+  }, [simState]);
+
+  // ── Badge & Shield Helpers ────────────────────────────────────────────────
+  const addBadgeToNode = (nodeId, text, colorHex) => {
+    if (compromisedBadgesRef.current[nodeId]) {
+      removeBadgeFromNode(nodeId);
+    }
+    const node = NODES.find(n => n.id === nodeId);
+    if (!node) return;
+    const group = meshMapRef.current[nodeId];
+    if (!group) return;
+
+    const badgeSprite = createBadgeSprite(text, colorHex);
+    // Track colorHex dynamically to detect transitions
+    badgeSprite.material.colorHex = colorHex;
+    
+    // Position badge relative to label sprite Y offset
+    let labelY = node.size * 1.5;
+    if (nodeId === 'webgw' || nodeId === 'lb') {
+      labelY = 0;
+    } else if (nodeId === 'coredb' || nodeId === 'swift' || nodeId === 'backup') {
+      labelY = -node.size * 1.6;
+    } else if (nodeId === 'internet') {
+      labelY = 1.8;
+    }
+
+    // Place badge slightly offsetted from the label
+    let badgeY = labelY > 0 ? labelY + 0.95 : labelY - 0.95;
+    let badgeX = 0;
+    if (nodeId === 'webgw') {
+      badgeX = -2.3;
+      badgeY = -0.7;
+    } else if (nodeId === 'lb') {
+      badgeX = 2.3;
+      badgeY = -0.7;
+    }
+    
+    badgeSprite.position.set(badgeX, badgeY, 0);
+    group.add(badgeSprite);
+    compromisedBadgesRef.current[nodeId] = badgeSprite;
+  };
+
+  const removeBadgeFromNode = (nodeId) => {
+    const badgeSprite = compromisedBadgesRef.current[nodeId];
+    if (!badgeSprite) return;
+    const group = meshMapRef.current[nodeId];
+    if (group) {
+      group.remove(badgeSprite);
+    }
+    if (badgeSprite.material) {
+      if (badgeSprite.material.map) badgeSprite.material.map.dispose();
+      badgeSprite.material.dispose();
+    }
+    delete compromisedBadgesRef.current[nodeId];
+  };
+
+  const clearAllBadges = () => {
+    Object.keys(compromisedBadgesRef.current).forEach(nodeId => {
+      removeBadgeFromNode(nodeId);
+    });
+  };
+
+  const spawnRemediationShield = (nodeId) => {
+    const node = NODES.find(n => n.id === nodeId);
+    if (!node) return;
+    const pos = NODE_POSITIONS[nodeId];
+    if (!pos) return;
+
+    // Start with a small sphere mesh
+    const geo = new THREE.SphereGeometry(node.size * 0.5, 24, 24);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x10b981, // Premium green
+      wireframe: true,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+    });
+    const shield = new THREE.Mesh(geo, mat);
+    shield.position.set(...pos);
+    
+    if (sceneRef.current) {
+      sceneRef.current.add(shield);
+    }
+
+    remediationShieldsRef.current.push({
+      mesh: shield,
+      maxScale: 3.5,
+      scaleSpeed: 0.04 + Math.random() * 0.02,
+      fadeSpeed: 0.015,
+    });
+  };
+
+
   // ── Three.js scene setup ──────────────────────────────────────────────────
   useEffect(() => {
     const container = mountRef.current;
-    const W = container.clientWidth;
-    const H = container.clientHeight;
+    if (!container) {
+      console.warn("[DigitalTwin] mountRef.current is null on setup. Skipping Three.js initialization.");
+      return;
+    }
+    const W = container.clientWidth || 800;
+    const H = container.clientHeight || 600;
+    const aspect = H > 0 ? W / H : 1.33;
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    } catch (e) {
+      console.error("[DigitalTwin] WebGL initialization failed:", e);
+      return;
+    }
+    
     renderer.setSize(W, H);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
     renderer.setClearColor(0x020617, 1); // Darker cyber background matching vignette
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
@@ -243,7 +482,7 @@ export default function DigitalTwin() {
     scene.fog = new THREE.FogExp2(0x020617, 0.022);
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 200);
+    const camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 200);
     cameraRef.current = camera;
 
     // Lights
@@ -440,99 +679,456 @@ export default function DigitalTwin() {
     };
     updateCamera();
 
+    let hasLoggedAnimateStart = false;
+
     // Animation loop
     const animate = () => {
-      frameRef.current = requestAnimationFrame(animate);
-      clockRef.current += 0.016;
-      const t = clockRef.current;
-
-      // Update camera
-      updateCamera();
-
-      // Pulse internet node
-      const inetGroup = meshMapRef.current['internet'];
-      if (inetGroup) {
-        const scale = 1 + Math.sin(t * 2.5) * 0.12;
-        inetGroup.children[0].scale.setScalar(scale);
-        inetGroup.children[0].rotation.y += 0.01;
-        if (inetGroup.children[2]) {
-          inetGroup.children[2].material.opacity = 0.15 + Math.sin(t * 2) * 0.12;
+      try {
+        if (!hasLoggedAnimateStart) {
+          console.log("%c[DigitalTwin] Three.js animation loop started successfully.", "color: #3b82f6; font-weight: bold;");
+          hasLoggedAnimateStart = true;
         }
+
+        frameRef.current = requestAnimationFrame(animate);
+        clockRef.current += 0.016;
+        const t = clockRef.current;
+
+        // Update camera safely
+        if (cameraRef.current) {
+          updateCamera();
+        }
+
+        // Pulse internet node safely
+        const inetGroup = meshMapRef.current ? meshMapRef.current['internet'] : null;
+        if (inetGroup && inetGroup.children) {
+          const scale = 1 + Math.sin(t * 2.5) * 0.12;
+          if (inetGroup.children[0]) {
+            if (inetGroup.children[0].scale) {
+              inetGroup.children[0].scale.setScalar(scale);
+            }
+            if (inetGroup.children[0].rotation) {
+              inetGroup.children[0].rotation.y += 0.01;
+            }
+          }
+          if (inetGroup.children[2] && inetGroup.children[2].material) {
+            inetGroup.children[2].material.opacity = 0.15 + Math.sin(t * 2) * 0.12;
+          }
+        }
+
+        // Gently pulse all nodes safely
+        NODES.forEach(node => {
+          if (node.id === 'internet') return;
+          const group = meshMapRef.current ? meshMapRef.current[node.id] : null;
+          if (!group || !group.children) return;
+          const pulse = 1 + Math.sin(t * 1.2 + node.id.charCodeAt(0)) * 0.03;
+          if (group.children[0] && group.children[0].scale) {
+            group.children[0].scale.setScalar(pulse);
+          }
+          if (group.children[1] && group.children[1].rotation) {
+            group.children[1].rotation.y += 0.004;
+          }
+        });
+
+        // Pulse attack path nodes red safely
+        if (attackPathRef.current) {
+          attackPathRef.current.forEach(nodeId => {
+            const group = meshMapRef.current[nodeId];
+            if (!group || !group.children) return;
+            const pulse = 1 + Math.sin(t * 5) * 0.15;
+            if (group.children[0] && group.children[0].scale) {
+              group.children[0].scale.setScalar(pulse);
+            }
+          });
+        }
+
+        // CVE rings pulse safely
+        if (ringMapRef.current) {
+          Object.entries(ringMapRef.current).forEach(([cveId, ring]) => {
+            if (ring && ring.material && ring.material.opacity > 0) {
+              const data = CVES[cveId];
+              if (data) {
+                const speed = data.severity === 'CRITICAL' ? 4 : 2;
+                const baseOp = data.severity === 'CRITICAL' ? 0.7 : 0.5;
+                ring.material.opacity = baseOp * (0.5 + Math.sin(t * speed) * 0.5);
+                if (ring.scale) {
+                  ring.scale.setScalar(1 + Math.sin(t * speed * 0.5) * 0.08);
+                }
+              }
+            }
+          });
+        }
+
+        // Particle animation safely
+        if (particleSystemsRef.current) {
+          particleSystemsRef.current.forEach(ps => {
+            if (!ps || !ps.mat || ps.mat.opacity <= 0) return;
+            if (!ps.points || !ps.points.geometry || !ps.points.geometry.attributes || !ps.points.geometry.attributes.position) return;
+            const positions = ps.points.geometry.attributes.position;
+            if (!ps.offsets || !ps.posA || !ps.posB) return;
+            for (let i = 0; i < ps.offsets.length; i++) {
+              ps.offsets[i] = (ps.offsets[i] + ps.speed) % 1;
+              const t2 = ps.offsets[i];
+              positions.setXYZ(i,
+                ps.posA.x + (ps.posB.x - ps.posA.x) * t2,
+                ps.posA.y + (ps.posB.y - ps.posA.y) * t2,
+                ps.posA.z + (ps.posB.z - ps.posA.z) * t2,
+              );
+            }
+            positions.needsUpdate = true;
+          });
+        }
+
+        // Animate remediation shields safely
+        if (remediationShieldsRef.current) {
+          remediationShieldsRef.current.forEach(item => {
+            if (!item || !item.mesh) return;
+            if (item.mesh.scale) {
+              item.mesh.scale.addScalar(item.scaleSpeed || 0.01);
+            }
+            if (item.mesh.material) {
+              item.mesh.material.opacity -= (item.fadeSpeed || 0.015);
+            }
+            if (item.mesh.material && item.mesh.material.opacity <= 0) {
+              if (sceneRef.current) {
+                sceneRef.current.remove(item.mesh);
+              }
+              if (item.mesh.geometry) item.mesh.geometry.dispose();
+              if (item.mesh.material) item.mesh.material.dispose();
+            }
+          });
+          remediationShieldsRef.current = remediationShieldsRef.current.filter(item => item && item.mesh && item.mesh.material && item.mesh.material.opacity > 0);
+        }
+
+        // --- DYNAMIC FIVE-STAGE PROPAGATION ENGINE ---
+        if (simStateRef.current !== 'idle') {
+          simTimeRef.current += 0.016;
+        } else {
+          simTimeRef.current = 0;
+        }
+        
+        const elapsed = simTimeRef.current;
+        const path = attackPathRef.current;
+        const phases = parsePathPhases(path);
+
+        if (simStateRef.current !== 'idle' && phases) {
+          const isBreached = elapsed >= 5.0 && elapsed < 8.0;
+          const isRemediated = elapsed >= 8.0;
+
+          // Ambient lighting adjustments based on attack stage safely
+          if (pLight1 && pLight1.color) {
+            if (isBreached) {
+              pLight1.color.setHex(0xff1111);
+              pLight1.intensity = 4.0;
+            } else if (isRemediated) {
+              pLight1.color.setHex(0x10b981);
+              pLight1.intensity = 3.0;
+            } else {
+              pLight1.color.setHex(0x3b82f6);
+              pLight1.intensity = 2.5;
+            }
+          }
+          if (sceneRef.current && sceneRef.current.fog) {
+            sceneRef.current.fog.density = isBreached ? 0.03 : 0.022;
+          }
+
+          // Helper to find lines and particle systems safely
+          const getEdgeElements = (a, b) => {
+            const key1 = `${a}-${b}`;
+            const key2 = `${b}-${a}`;
+            const line = lineMapRef.current ? (lineMapRef.current[key1] || lineMapRef.current[key2]) : undefined;
+            const ps = particleSystemsRef.current ? particleSystemsRef.current.find(p => p && ((p.src === a && p.dst === b) || (p.src === b && p.dst === a))) : undefined;
+            return { line, ps };
+          };
+
+          // STAGE 1: Reconnaissance (0.0s - 1.5s)
+          if (elapsed < 1.5) {
+            const nodeData = NODES.find(n => n.id === phases.gatewayNode);
+            if (nodeData && nodeData.cve && ringMapRef.current) {
+              const ring = ringMapRef.current[nodeData.cve];
+              if (ring && ring.material && ring.scale) {
+                const progress = (elapsed * 1.5) % 1.0;
+                ring.material.opacity = 0.85 * (1.0 - progress);
+                ring.scale.setScalar(0.8 + progress * 2.5);
+              }
+            }
+          }
+
+          // STAGE 2: Gateway Intrusion (1.5s - 3.0s)
+          if (elapsed >= 1.5 && elapsed < 3.0 && phases.perimeterEdges) {
+            phases.perimeterEdges.forEach(([src, dst]) => {
+              const { line, ps } = getEdgeElements(src, dst);
+              if (line && line.material && line.material.color) {
+                line.material.color.set(0xff2222);
+                line.material.opacity = 1.0;
+              }
+              if (ps && ps.mat && ps.mat.color) {
+                ps.mat.color.set(0xff2222);
+                ps.speed = 0.025;
+                ps.mat.size = 0.18;
+                ps.mat.opacity = 0.95;
+              }
+            });
+
+            if (elapsed >= 2.2) {
+              const group = meshMapRef.current[phases.gatewayNode];
+              if (group && group.children) {
+                const mesh = group.children[0];
+                if (mesh && mesh.material && mesh.material.color && mesh.material.emissive) {
+                  mesh.material.color.set(0xff2222);
+                  mesh.material.emissive.set(0xff1111);
+                  mesh.material.emissiveIntensity = 1.25;
+                }
+
+                if (!compromisedBadgesRef.current[phases.gatewayNode]) {
+                  addBadgeToNode(phases.gatewayNode, 'COMPROMISED', '#ef4444');
+                }
+              }
+            }
+          }
+
+          // STAGE 3: Lateral Movement (3.0s - 5.0s)
+          if (elapsed >= 3.0 && elapsed < 5.0) {
+            if (phases.perimeterEdges) {
+              phases.perimeterEdges.forEach(([src, dst]) => {
+                const { line, ps } = getEdgeElements(src, dst);
+                if (line && line.material && line.material.color) {
+                  line.material.color.set(0xff2222);
+                  line.material.opacity = 0.8;
+                }
+                if (ps && ps.mat && ps.mat.color) {
+                  ps.mat.color.set(0xff2222);
+                  ps.speed = 0.015;
+                  ps.mat.size = 0.15;
+                  ps.mat.opacity = 0.8;
+                }
+              });
+            }
+
+            const gatewayGroup = meshMapRef.current[phases.gatewayNode];
+            if (gatewayGroup && gatewayGroup.children) {
+              const mesh = gatewayGroup.children[0];
+              if (mesh && mesh.material && mesh.material.color && mesh.material.emissive) {
+                mesh.material.color.set(0xff2222);
+                mesh.material.emissive.set(0xff1111);
+              }
+              if (!compromisedBadgesRef.current[phases.gatewayNode]) {
+                addBadgeToNode(phases.gatewayNode, 'COMPROMISED', '#ef4444');
+              }
+            }
+
+            if (phases.lateralEdges) {
+              phases.lateralEdges.forEach(([src, dst]) => {
+                const { line, ps } = getEdgeElements(src, dst);
+                if (line && line.material && line.material.color) {
+                  line.material.color.set(0xff2222);
+                  line.material.opacity = 1.0;
+                }
+                if (ps && ps.mat && ps.mat.color) {
+                  ps.mat.color.set(0xff2222);
+                  ps.speed = 0.025;
+                  ps.mat.size = 0.18;
+                  ps.mat.opacity = 0.95;
+                }
+              });
+            }
+
+            if (elapsed >= 3.5 && phases.intermediateNodes) {
+              phases.intermediateNodes.forEach(nodeId => {
+                const group = meshMapRef.current[nodeId];
+                if (group && group.children) {
+                  const mesh = group.children[0];
+                  if (mesh && mesh.material && mesh.material.color && mesh.material.emissive) {
+                    mesh.material.color.set(0xff2222);
+                    mesh.material.emissive.set(0xff1111);
+                    mesh.material.emissiveIntensity = 1.25;
+                  }
+
+                  if (!compromisedBadgesRef.current[nodeId]) {
+                    addBadgeToNode(nodeId, 'COMPROMISED', '#ef4444');
+                  }
+                }
+              });
+            }
+          }
+
+          // STAGE 4: Core Targeting / DB Breach (5.0s - 8.0s)
+          if (elapsed >= 5.0 && elapsed < 8.0) {
+            if (phases.perimeterEdges && phases.lateralEdges) {
+              phases.perimeterEdges.concat(phases.lateralEdges).forEach(([src, dst]) => {
+                const { line, ps } = getEdgeElements(src, dst);
+                if (line && line.material && line.material.color) {
+                  line.material.color.set(0xff2222);
+                  line.material.opacity = 0.8;
+                }
+                if (ps && ps.mat && ps.mat.color) {
+                  ps.mat.color.set(0xff2222);
+                  ps.speed = 0.015;
+                  ps.mat.size = 0.15;
+                  ps.mat.opacity = 0.8;
+                }
+              });
+            }
+
+            if (phases.intermediateNodes) {
+              const compNodes = [phases.gatewayNode].concat(phases.intermediateNodes);
+              compNodes.forEach(nodeId => {
+                const group = meshMapRef.current[nodeId];
+                if (group && group.children) {
+                  const mesh = group.children[0];
+                  if (mesh && mesh.material && mesh.material.color && mesh.material.emissive) {
+                    mesh.material.color.set(0xff2222);
+                    mesh.material.emissive.set(0xff1111);
+                  }
+                  if (!compromisedBadgesRef.current[nodeId]) {
+                    addBadgeToNode(nodeId, 'COMPROMISED', '#ef4444');
+                  }
+                }
+              });
+            }
+
+            if (phases.targetEdges) {
+              phases.targetEdges.forEach(([src, dst]) => {
+                const { line, ps } = getEdgeElements(src, dst);
+                if (line && line.material && line.material.color) {
+                  line.material.color.set(0xff2222);
+                  line.material.opacity = 1.0;
+                }
+                if (ps && ps.mat && ps.mat.color) {
+                  ps.mat.color.set(0xff2222);
+                  ps.speed = 0.035;
+                  ps.mat.size = 0.22;
+                  ps.mat.opacity = 0.95;
+                }
+              });
+            }
+
+            if (elapsed >= 5.2) {
+              const group = meshMapRef.current[phases.targetNode];
+              if (group && group.children) {
+                const mesh = group.children[0];
+                const wire = group.children[1];
+
+                const flash = 1.0 + Math.sin(t * 18.0) * 0.25;
+                if (mesh && mesh.scale && mesh.material && mesh.material.color && mesh.material.emissive) {
+                  mesh.scale.setScalar(flash * (NODES.find(n => n.id === phases.targetNode)?.size || 1.0));
+                  mesh.material.color.set(0xff1111);
+                  mesh.material.emissive.set(0xff0000);
+                  mesh.material.emissiveIntensity = 2.5;
+                }
+
+                if (!compromisedBadgesRef.current[phases.targetNode]) {
+                  addBadgeToNode(phases.targetNode, 'COMPROMISED', '#ef4444');
+                }
+
+                if (wire && wire.scale && wire.material && wire.material.color) {
+                  const progress = (elapsed * 1.5) % 1.0;
+                  wire.scale.setScalar(2.0 + progress * 2.5);
+                  wire.material.color.set(0xff1111);
+                  wire.material.opacity = 0.65 * (1.0 - progress);
+                }
+              }
+            }
+          }
+
+          // STAGE 5: AI Remediation & Containment (8.0s+)
+          if (elapsed >= 8.0) {
+            if (remediationShieldsRef.current && remediationShieldsRef.current.length === 0) {
+              spawnRemediationShield(phases.targetNode);
+              if (phases.intermediateNodes && phases.intermediateNodes.includes('iam')) {
+                spawnRemediationShield('iam');
+              } else if (phases.gatewayNode) {
+                spawnRemediationShield(phases.gatewayNode);
+              }
+            }
+
+            if (phases.intermediateNodes) {
+              const pathNodes = [phases.gatewayNode].concat(phases.intermediateNodes).concat([phases.targetNode]);
+              pathNodes.forEach(nodeId => {
+                if (compromisedBadgesRef.current && compromisedBadgesRef.current[nodeId] && compromisedBadgesRef.current[nodeId].material && compromisedBadgesRef.current[nodeId].material.colorHex !== '#10b981') {
+                  addBadgeToNode(nodeId, 'CONTAINED', '#10b981');
+                }
+
+                const group = meshMapRef.current ? meshMapRef.current[nodeId] : null;
+                if (group && group.children) {
+                  const mesh = group.children[0];
+                  const wire = group.children[1];
+
+                  if (mesh && mesh.material && mesh.material.color && mesh.material.emissive) {
+                    mesh.material.color.set(0x10b981);
+                    mesh.material.emissive.set(0x10b981);
+                    mesh.material.emissiveIntensity = 0.95;
+                  }
+
+                  if (wire && wire.scale && wire.material && wire.material.color) {
+                    const nodeData = NODES.find(n => n.id === nodeId);
+                    const nodeSize = nodeData ? nodeData.size : undefined;
+                    wire.scale.setScalar(nodeSize !== undefined ? nodeSize * 1.2 : 1.15);
+                    wire.material.color.set(0x10b981);
+                    wire.material.opacity = 0.22;
+                  }
+                }
+              });
+            }
+
+            if (phases.perimeterEdges && phases.lateralEdges && phases.targetEdges) {
+              phases.perimeterEdges.concat(phases.lateralEdges).concat(phases.targetEdges).forEach(([src, dst]) => {
+                const { line, ps } = getEdgeElements(src, dst);
+                if (line && line.material && line.material.color) {
+                  line.material.color.set(0x10b981);
+                  line.material.opacity = 0.65;
+                }
+                if (ps && ps.mat && ps.mat.color) {
+                  ps.mat.color.set(0x10b981);
+                  ps.speed = 0.003;
+                  ps.mat.size = 0.1;
+                  ps.mat.opacity = 0.55;
+                }
+              });
+            }
+          }
+        }
+
+        // Identity meshes bob safely
+        if (identityMeshesRef.current) {
+          identityMeshesRef.current.forEach((mesh, i) => {
+            if (mesh && mesh.material && mesh.material.opacity > 0 && mesh.position) {
+              mesh.position.y += Math.sin(t * 1.5 + i) * 0.002;
+            }
+          });
+        }
+
+        // Render scene safely
+        if (renderer && scene && camera) {
+          renderer.render(scene, camera);
+        }
+      } catch (err) {
+        console.error("%c[DigitalTwin] Exception in Three.js render/animate frame loop:", "color: #ef4444; font-weight: bold;", err);
       }
-
-      // Gently pulse all nodes
-      NODES.forEach(node => {
-        if (node.id === 'internet') return;
-        const group = meshMapRef.current[node.id];
-        if (!group) return;
-        const pulse = 1 + Math.sin(t * 1.2 + node.id.charCodeAt(0)) * 0.03;
-        group.children[0].scale.setScalar(pulse);
-        group.children[1].rotation.y += 0.004;
-      });
-
-      // Pulse attack path nodes red (brighter active attack paths)
-      attackPathRef.current.forEach(nodeId => {
-        const group = meshMapRef.current[nodeId];
-        if (!group) return;
-        const pulse = 1 + Math.sin(t * 5) * 0.15;
-        group.children[0].scale.setScalar(pulse);
-      });
-
-      // CVE rings pulse (Layer 4)
-      Object.entries(ringMapRef.current).forEach(([cveId, ring]) => {
-        if (ring.material.opacity > 0) {
-          const data = CVES[cveId];
-          const speed = data.severity === 'CRITICAL' ? 4 : 2;
-          const baseOp = data.severity === 'CRITICAL' ? 0.7 : 0.5;
-          ring.material.opacity = baseOp * (0.5 + Math.sin(t * speed) * 0.5);
-          ring.scale.setScalar(1 + Math.sin(t * speed * 0.5) * 0.08);
-        }
-      });
-
-      // Particle animation (Layer 5)
-      particleSystemsRef.current.forEach(ps => {
-        if (ps.mat.opacity <= 0) return;
-        const positions = ps.points.geometry.attributes.position;
-        for (let i = 0; i < ps.offsets.length; i++) {
-          ps.offsets[i] = (ps.offsets[i] + ps.speed) % 1;
-          const t2 = ps.offsets[i];
-          positions.setXYZ(i,
-            ps.posA.x + (ps.posB.x - ps.posA.x) * t2,
-            ps.posA.y + (ps.posB.y - ps.posA.y) * t2,
-            ps.posA.z + (ps.posB.z - ps.posA.z) * t2,
-          );
-        }
-        positions.needsUpdate = true;
-      });
-
-      // Identity meshes bob
-      identityMeshesRef.current.forEach((mesh, i) => {
-        if (mesh.material.opacity > 0) {
-          mesh.position.y += Math.sin(t * 1.5 + i) * 0.002;
-        }
-      });
-
-      renderer.render(scene, camera);
     };
+
     animate();
 
     // Resize handler
     const handleResize = () => {
-      const W2 = container.clientWidth;
-      const H2 = container.clientHeight;
+      if (!container || !renderer || !camera) return;
+      const W2 = container.clientWidth || 800;
+      const H2 = container.clientHeight || 600;
       renderer.setSize(W2, H2);
-      camera.aspect = W2 / H2;
+      camera.aspect = H2 > 0 ? W2 / H2 : 1.33;
       camera.updateProjectionMatrix();
     };
     window.addEventListener('resize', handleResize);
 
     // Mouse orbit controls
     const onMouseDown = e => {
-      orbitRef.current.dragging = true;
-      orbitRef.current.lastX = e.clientX;
-      orbitRef.current.lastY = e.clientY;
+      if (orbitRef.current) {
+        orbitRef.current.dragging = true;
+        orbitRef.current.lastX = e.clientX;
+        orbitRef.current.lastY = e.clientY;
+      }
     };
     const onMouseMove = e => {
+      if (!orbitRef.current) return;
       const { dragging, lastX, lastY } = orbitRef.current;
       if (!dragging) return;
       const dx = e.clientX - lastX;
@@ -542,9 +1138,11 @@ export default function DigitalTwin() {
       orbitRef.current.lastX = e.clientX;
       orbitRef.current.lastY = e.clientY;
     };
-    const onMouseUp = () => { orbitRef.current.dragging = false; };
+    const onMouseUp = () => { if (orbitRef.current) orbitRef.current.dragging = false; };
     const onWheel = e => {
-      orbitRef.current.radius = Math.max(8, Math.min(40, orbitRef.current.radius + e.deltaY * 0.03));
+      if (orbitRef.current) {
+        orbitRef.current.radius = Math.max(8, Math.min(40, orbitRef.current.radius + e.deltaY * 0.03));
+      }
     };
 
     // Raycaster for click/hover
@@ -552,23 +1150,26 @@ export default function DigitalTwin() {
     const mouse = new THREE.Vector2();
 
     const getIntersectedNode = (evt) => {
+      if (!container || !camera || !meshMapRef.current) return null;
       const rect = container.getBoundingClientRect();
+      if (!rect || container.clientWidth === 0 || container.clientHeight === 0) return null;
       mouse.x = ((evt.clientX - rect.left) / container.clientWidth) * 2 - 1;
       mouse.y = -((evt.clientY - rect.top) / container.clientHeight) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
-      const meshes = Object.values(meshMapRef.current).map(g => g.children[0]).filter(Boolean);
+      const meshes = Object.values(meshMapRef.current).map(g => g && g.children ? g.children[0] : null).filter(Boolean);
       const hits = raycaster.intersectObjects(meshes);
-      if (hits.length > 0) {
+      if (hits.length > 0 && hits[0].object && hits[0].object.userData) {
         return hits[0].object.userData.nodeId;
       }
       return null;
     };
 
     const onCanvasMouseMove = (evt) => {
+      if (!container) return;
       const nodeId = getIntersectedNode(evt);
       if (nodeId) {
         const rect = container.getBoundingClientRect();
-        setTooltip({ visible: true, x: evt.clientX - rect.left, y: evt.clientY - rect.top, nodeId });
+        setTooltip({ visible: true, x: evt.clientX - (rect ? rect.left : 0), y: evt.clientY - (rect ? rect.top : 0), nodeId });
         container.style.cursor = 'pointer';
       } else {
         setTooltip({ visible: false, x: 0, y: 0, nodeId: null });
@@ -577,6 +1178,7 @@ export default function DigitalTwin() {
     };
 
     const onCanvasClick = (evt) => {
+      if (!orbitRef.current) return;
       if (Math.abs(evt.clientX - orbitRef.current.lastX) > 5) return;
       const nodeId = getIntersectedNode(evt);
       if (nodeId) {
@@ -585,50 +1187,97 @@ export default function DigitalTwin() {
       }
     };
 
-    renderer.domElement.addEventListener('mousedown', onMouseDown);
+    if (renderer && renderer.domElement) {
+      renderer.domElement.addEventListener('mousedown', onMouseDown);
+      renderer.domElement.addEventListener('wheel', onWheel, { passive: true });
+      renderer.domElement.addEventListener('mousemove', onCanvasMouseMove);
+      renderer.domElement.addEventListener('click', onCanvasClick);
+    }
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-    renderer.domElement.addEventListener('wheel', onWheel, { passive: true });
-    renderer.domElement.addEventListener('mousemove', onCanvasMouseMove);
-    renderer.domElement.addEventListener('click', onCanvasClick);
 
     return () => {
-      cancelAnimationFrame(frameRef.current);
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
-      renderer.domElement.removeEventListener('mousedown', onMouseDown);
-      renderer.domElement.removeEventListener('wheel', onWheel);
-      renderer.domElement.removeEventListener('mousemove', onCanvasMouseMove);
-      renderer.domElement.removeEventListener('click', onCanvasClick);
-      renderer.dispose();
-      if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
+      if (renderer && renderer.domElement) {
+        renderer.domElement.removeEventListener('mousedown', onMouseDown);
+        renderer.domElement.removeEventListener('wheel', onWheel);
+        renderer.domElement.removeEventListener('mousemove', onCanvasMouseMove);
+        renderer.domElement.removeEventListener('click', onCanvasClick);
+      }
+      
+      // Clean up badges
+      if (compromisedBadgesRef.current) {
+        Object.keys(compromisedBadgesRef.current).forEach(nodeId => {
+          const badgeSprite = compromisedBadgesRef.current[nodeId];
+          if (badgeSprite) {
+            const group = meshMapRef.current ? meshMapRef.current[nodeId] : null;
+            if (group) group.remove(badgeSprite);
+            if (badgeSprite.material) {
+              if (badgeSprite.material.map) badgeSprite.material.map.dispose();
+              badgeSprite.material.dispose();
+            }
+          }
+        });
+        compromisedBadgesRef.current = {};
+      }
+
+      // Clean up shields
+      if (remediationShieldsRef.current) {
+        remediationShieldsRef.current.forEach(item => {
+          if (item && item.mesh) {
+            if (scene) scene.remove(item.mesh);
+            if (item.mesh.geometry) item.mesh.geometry.dispose();
+            if (item.mesh.material) item.mesh.material.dispose();
+          }
+        });
+        remediationShieldsRef.current = [];
+      }
+
+      if (renderer) renderer.dispose();
+      if (container && renderer && renderer.domElement && container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
     };
   }, []);
+
 
   // ── Layer 3: Identities visibility ───────────────────────────────────────
   useEffect(() => {
     const vis = layers.identities ? 0.85 : 0;
-    identityMeshesRef.current.forEach(m => { m.material.opacity = vis; });
+    if (identityMeshesRef.current) {
+      identityMeshesRef.current.forEach(m => {
+        if (m && m.material) m.material.opacity = vis;
+      });
+    }
   }, [layers.identities]);
 
   // ── Layer 4: CVE rings visibility ────────────────────────────────────────
   useEffect(() => {
-    Object.values(ringMapRef.current).forEach(ring => {
-      if (!layers.vulns) ring.material.opacity = 0;
-      else ring.material.opacity = 0.5;
-    });
+    if (ringMapRef.current) {
+      Object.values(ringMapRef.current).forEach(ring => {
+        if (ring && ring.material) {
+          ring.material.opacity = layers.vulns ? 0.5 : 0;
+        }
+      });
+    }
   }, [layers.vulns]);
 
   // ── Layer 5: Particles visibility ────────────────────────────────────────
   useEffect(() => {
-    particleSystemsRef.current.forEach(ps => {
-      if (!layers.logs) {
-        ps.mat.opacity = 0;
-      } else {
-        ps.mat.opacity = ps.type === 'attack' ? 0.95 : ps.type === 'suspicious' ? 0.75 : 0.45;
-      }
-    });
+    if (particleSystemsRef.current) {
+      particleSystemsRef.current.forEach(ps => {
+        if (ps && ps.mat) {
+          if (!layers.logs) {
+            ps.mat.opacity = 0;
+          } else {
+            ps.mat.opacity = ps.type === 'attack' ? 0.95 : ps.type === 'suspicious' ? 0.75 : 0.45;
+          }
+        }
+      });
+    }
   }, [layers.logs]);
 
   // ── Normal log ticker ─────────────────────────────────────────────────────
@@ -647,60 +1296,77 @@ export default function DigitalTwin() {
 
   // ── Attack path line highlighting ─────────────────────────────────────────
   useEffect(() => {
-    // Reset all lines
-    Object.values(lineMapRef.current).forEach(line => {
-      line.material.color.set(0x1e3a5f);
-      line.material.opacity = 0.5;
-    });
+    if (lineMapRef.current) {
+      // Reset all lines
+      Object.values(lineMapRef.current).forEach(line => {
+        if (line && line.material && line.material.color) {
+          line.material.color.set(0x1e3a5f);
+          line.material.opacity = 0.5;
+        }
+      });
+    }
     // Highlight attack path
     const path = attackPathRef.current;
-    for (let i = 0; i < path.length - 1; i++) {
-      const key1 = `${path[i]}-${path[i+1]}`;
-      const key2 = `${path[i+1]}-${path[i]}`;
-      const line = lineMapRef.current[key1] || lineMapRef.current[key2];
-      if (line) {
-        line.material.color.set(0xff2222);
-        line.material.opacity = 1.0;
+    if (path && lineMapRef.current) {
+      for (let i = 0; i < path.length - 1; i++) {
+        const key1 = `${path[i]}-${path[i+1]}`;
+        const key2 = `${path[i+1]}-${path[i]}`;
+        const line = lineMapRef.current[key1] || lineMapRef.current[key2];
+        if (line && line.material && line.material.color) {
+          line.material.color.set(0xff2222);
+          line.material.opacity = 1.0;
+        }
       }
     }
     // Color nodes
-    NODES.forEach(node => {
-      const group = meshMapRef.current[node.id];
-      if (!group) return;
-      const isAttacked = path.includes(node.id);
-      const mesh = group.children[0];
-      if (isAttacked) {
-        mesh.material.color.set(0xff2222);
-        mesh.material.emissive.set(0xff0000);
-        mesh.material.emissiveIntensity = 1.25; // Brighter active node glow on attack path
-      } else {
-        const origColor = NODES.find(n => n.id === node.id)?.color ?? 0x3b82f6;
-        mesh.material.color.set(origColor);
-        mesh.material.emissive.set(origColor);
-        mesh.material.emissiveIntensity = node.criticality >= 8 ? 0.75 : 0.35;
-      }
-    });
+    if (meshMapRef.current) {
+      NODES.forEach(node => {
+        const group = meshMapRef.current[node.id];
+        if (!group || !group.children) return;
+        const isAttacked = path && path.includes(node.id);
+        const mesh = group.children[0];
+        if (mesh && mesh.material) {
+          if (isAttacked) {
+            if (mesh.material.color) mesh.material.color.set(0xff2222);
+            if (mesh.material.emissive) {
+              mesh.material.emissive.set(0xff0000);
+              mesh.material.emissiveIntensity = 1.25; // Brighter active node glow on attack path
+            }
+          } else {
+            const origColor = NODES.find(n => n.id === node.id)?.color ?? 0x3b82f6;
+            if (mesh.material.color) mesh.material.color.set(origColor);
+            if (mesh.material.emissive) {
+              mesh.material.emissive.set(origColor);
+              mesh.material.emissiveIntensity = node.criticality >= 8 ? 0.75 : 0.35;
+            }
+          }
+        }
+      });
+    }
   }, [attackPathNodes]);
 
   // ── Attack particles ──────────────────────────────────────────────────────
   useEffect(() => {
     const path = attackPathRef.current;
-    particleSystemsRef.current.forEach(ps => {
-      const onPath = path.includes(ps.src) && path.includes(ps.dst);
-      if (onPath && simStateRef.current === 'running') {
-        ps.type = 'attack';
-        ps.speed = 0.015;
-        ps.mat.color.set(0xff2222);
-        ps.mat.size = 0.18;
-        if (layers.logs) ps.mat.opacity = 0.95;
-      } else if (!onPath) {
-        ps.type = 'normal';
-        ps.speed = 0.003;
-        ps.mat.color.set(0x60a5fa);
-        ps.mat.size = 0.1;
-        if (layers.logs) ps.mat.opacity = 0.45;
-      }
-    });
+    if (path && particleSystemsRef.current) {
+      particleSystemsRef.current.forEach(ps => {
+        if (!ps || !ps.mat || !ps.mat.color) return;
+        const onPath = path.includes(ps.src) && path.includes(ps.dst);
+        if (onPath && simStateRef.current === 'running') {
+          ps.type = 'attack';
+          ps.speed = 0.015;
+          ps.mat.color.set(0xff2222);
+          ps.mat.size = 0.18;
+          if (layers.logs) ps.mat.opacity = 0.95;
+        } else if (!onPath) {
+          ps.type = 'normal';
+          ps.speed = 0.003;
+          ps.mat.color.set(0x60a5fa);
+          ps.mat.size = 0.1;
+          if (layers.logs) ps.mat.opacity = 0.45;
+        }
+      });
+    }
   }, [attackPathNodes, layers.logs]);
 
   const appendLog = useCallback((type, src, dst, msg) => {
@@ -769,7 +1435,22 @@ export default function DigitalTwin() {
     setAttackPathNodes([]);
     logLinesRef.current = [];
     setLogLines([]);
+
+    // Reset stopwatch & badge visual states
+    simTimeRef.current = 0;
+    clearAllBadges();
+
+    // Clean up remediation shields
+    remediationShieldsRef.current.forEach(item => {
+      if (sceneRef.current) {
+        sceneRef.current.remove(item.mesh);
+      }
+      if (item.mesh.geometry) item.mesh.geometry.dispose();
+      if (item.mesh.material) item.mesh.material.dispose();
+    });
+    remediationShieldsRef.current = [];
   }, []);
+
 
   const toggleLayer = key => {
     setLayers(prev => ({ ...prev, [key]: !prev[key] }));
@@ -792,31 +1473,31 @@ export default function DigitalTwin() {
   const renderStatusBadge = (type) => {
     let bg, color, border;
     if (type === 'ATTACK') {
-      bg = 'rgba(239, 68, 68, 0.15)';
-      color = '#ef4444';
-      border = '1px solid rgba(239, 68, 68, 0.35)';
+      bg = 'rgba(239, 68, 68, 0.2)';
+      color = '#ff6b6b';
+      border = '1px solid rgba(239, 68, 68, 0.55)';
     } else if (type === 'SUSPICIOUS') {
-      bg = 'rgba(234, 179, 8, 0.15)';
-      color = '#eab308';
-      border = '1px solid rgba(234, 179, 8, 0.35)';
+      bg = 'rgba(234, 179, 8, 0.2)';
+      color = '#facc15';
+      border = '1px solid rgba(234, 179, 8, 0.55)';
     } else {
-      bg = 'rgba(148, 163, 184, 0.1)';
-      color = '#94a3b8';
-      border = '1px solid rgba(148, 163, 184, 0.2)';
+      bg = 'rgba(148, 163, 184, 0.15)';
+      color = '#cbd5e1';
+      border = '1px solid rgba(148, 163, 184, 0.35)';
     }
     return (
       <span style={{
         display: 'inline-block',
-        padding: '2px 8px',
-        borderRadius: 4,
-        fontSize: 10,
-        fontWeight: 700,
-        letterSpacing: 1,
+        padding: '5px 12px',
+        borderRadius: 6,
+        fontSize: 14,
+        fontWeight: 900,
+        letterSpacing: 1.5,
         backgroundColor: bg,
         color: color,
         border: border,
         textAlign: 'center',
-        minWidth: 85,
+        minWidth: 120,
         textTransform: 'uppercase',
       }}>
         {type}
@@ -876,6 +1557,10 @@ export default function DigitalTwin() {
           50% { transform: scale(1.2); opacity: 1; }
           100% { transform: scale(0.95); opacity: 0.6; }
         }
+        @keyframes voice-wave-bob {
+          0% { transform: scaleY(0.25); }
+          100% { transform: scaleY(1.0); }
+        }
         .pulse-dot-red {
           width: 8px;
           height: 8px;
@@ -909,22 +1594,22 @@ export default function DigitalTwin() {
 
         {/* Active Layer Badges Stack (Left aligned, vertically stacked with spacing, below banner) */}
         <div style={{ position: 'absolute', top: 84, left: 24, display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none', zIndex: 10 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 2, color: '#475569', marginBottom: 4, textTransform: 'uppercase' }}>Active Layers</div>
+          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: 2, color: '#64748b', marginBottom: 4, textTransform: 'uppercase' }}>Active Layers</div>
           {Object.entries(layers).map(([key, on]) => on && (
             <div key={key} style={{
-              fontSize: 12,
+              fontSize: 16,
               fontWeight: 700,
               letterSpacing: 1.5,
               color: '#60a5fa',
               background: 'rgba(10, 14, 26, 0.85)',
-              padding: '6px 14px',
+              padding: '8px 16px',
               borderRadius: 6,
               borderLeft: '4px solid #3b82f6',
               borderTop: '1px solid rgba(96,165,250,0.15)',
               borderRight: '1px solid rgba(96,165,250,0.15)',
               borderBottom: '1px solid rgba(96,165,250,0.15)',
               textTransform: 'uppercase',
-              width: '180px',
+              width: '210px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.45)',
               backdropFilter: 'blur(8px)',
             }}>
@@ -935,13 +1620,29 @@ export default function DigitalTwin() {
 
         {/* Zone labels overlay */}
         {layers.network && (
-          <div style={{ position: 'absolute', bottom: 100, left: 24, pointerEvents: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ 
+            position: 'absolute', 
+            bottom: simState !== 'idle' ? 460 : 100, 
+            left: 24, 
+            pointerEvents: 'none', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 8,
+            transition: 'bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
             {[
               { label: 'CORE BANKING ZONE', color: '#eab308' },
               { label: 'INTERNAL NETWORK',  color: '#22c55e' },
               { label: 'DMZ ZONE',          color: '#3b82f6' },
             ].map(z => (
-              <div key={z.label} style={{ fontSize: 10, fontWeight: 800, letterSpacing: 3, color: z.color, opacity: 0.65 }}>{z.label}</div>
+              <div key={z.label} style={{ 
+                fontSize: 16, 
+                fontWeight: 900, 
+                letterSpacing: '6px', 
+                color: z.color, 
+                opacity: 0.95,
+                textShadow: `0 0 16px ${z.color}, 0 0 8px ${z.color}, 0 0 4px ${z.color}`,
+              }}>{z.label}</div>
             ))}
           </div>
         )}
@@ -953,41 +1654,41 @@ export default function DigitalTwin() {
             left: tooltip.x + 16, top: tooltip.y - 12,
             background: 'rgba(10,14,26,0.96)',
             border: '1px solid rgba(96,165,250,0.35)',
-            borderRadius: 10, padding: '12px 16px',
-            fontSize: 12, color: '#e2e8f0', pointerEvents: 'none',
-            zIndex: 20, minWidth: 200,
+            borderCornerRadius: 10, padding: '14px 18px',
+            fontSize: 14, color: '#e2e8f0', pointerEvents: 'none',
+            zIndex: 20, minWidth: 220,
             boxShadow: '0 10px 30px rgba(0,0,0,0.85)',
             backdropFilter: 'blur(12px)',
           }}>
-            <div style={{ fontWeight: 800, fontSize: 13, color: '#fff', marginBottom: 6, letterSpacing: 0.5 }}>{tooltipNode.label}</div>
-            <div style={{ color: '#60a5fa', fontWeight: 600, marginBottom: 4 }}>{tooltipNode.ip}</div>
-            <div style={{ color: '#94a3b8', fontSize: 11 }}>{tooltipNode.type} · {tooltipNode.os}</div>
-            {tooltipNode.cve && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 6, fontWeight: 700 }}>⚠️ {tooltipNode.cve}</div>}
-            <div style={{ color: '#475569', fontSize: 10, marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6 }}>Click node for telemetry</div>
+            <div style={{ fontWeight: 800, fontSize: 18, color: '#fff', marginBottom: 6, letterSpacing: 0.5 }}>{tooltipNode.label}</div>
+            <div style={{ color: '#60a5fa', fontWeight: 700, fontSize: 16, marginBottom: 4 }}>{tooltipNode.ip}</div>
+            <div style={{ color: '#94a3b8', fontSize: 14 }}>{tooltipNode.type} · {tooltipNode.os}</div>
+            {tooltipNode.cve && <div style={{ color: '#ff6b6b', fontSize: 14, marginTop: 6, fontWeight: 800 }}>⚠️ {tooltipNode.cve}</div>}
+            <div style={{ color: '#64748b', fontSize: 14, marginTop: 8, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 6 }}>Click node for telemetry</div>
           </div>
         )}
 
         {/* Node detail panel */}
         {selectedNode && (
           <div style={{
-            position: 'absolute', top: 24, right: 24,
+            position: 'absolute', top: 80, right: 24,
             background: 'rgba(10,14,26,0.96)',
             border: '1px solid rgba(96,165,250,0.3)',
-            borderRadius: 12, padding: 20, fontSize: 13,
-            color: '#e2e8f0', zIndex: 30, width: 280,
+            borderRadius: 12, padding: 22, fontSize: 15,
+            color: '#e2e8f0', zIndex: 30, width: 350,
             boxShadow: '0 20px 50px rgba(0,0,0,0.95)',
             backdropFilter: 'blur(16px)',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <span style={{ fontWeight: 800, fontSize: 15, color: '#fff', letterSpacing: 0.5 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <span style={{ fontWeight: 800, fontSize: 22, color: '#fff', letterSpacing: 0.5 }}>
                 {selectedNode.label}
               </span>
               <button
                 onClick={() => setSelectedNode(null)}
-                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 4 }}
+                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4 }}
               >✕</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: '8px 12px', fontSize: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '10px 14px', fontSize: 16 }}>
               <span style={{ color: '#64748b' }}>IP Address:</span><span style={{ color: '#60a5fa', fontWeight: 700 }}>{selectedNode.ip}</span>
               <span style={{ color: '#64748b' }}>Node Type:</span><span style={{ color: '#e2e8f0' }}>{selectedNode.type}</span>
               <span style={{ color: '#64748b' }}>OS Platform:</span><span style={{ color: '#e2e8f0' }}>{selectedNode.os}</span>
@@ -1000,10 +1701,10 @@ export default function DigitalTwin() {
               <span style={{ color: '#22c55e', fontWeight: 600 }}>🟢 ACTIVE & SECURE</span>
             </div>
             {selectedNode.cve && CVES[selectedNode.cve] && (
-              <div style={{ marginTop: 14, padding: '10px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8 }}>
-                <div style={{ fontWeight: 700, color: '#ef4444', fontSize: 12, marginBottom: 4 }}>{selectedNode.cve}</div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6, lineHeight: 1.4 }}>{CVES[selectedNode.cve].desc}</div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 11 }}>
+              <div style={{ marginTop: 16, padding: '12px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8 }}>
+                <div style={{ fontWeight: 700, color: '#ef4444', fontSize: 16, marginBottom: 6 }}>{selectedNode.cve}</div>
+                <div style={{ fontSize: 15, color: '#94a3b8', marginBottom: 8, lineHeight: 1.4 }}>{CVES[selectedNode.cve].desc}</div>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 15 }}>
                   <span style={{ color: '#f97316', fontWeight: 600 }}>CVSS {CVES[selectedNode.cve].cvss}</span>
                   <span style={{ color: '#eab308', fontWeight: 600 }}>EPSS {CVES[selectedNode.cve].epss}</span>
                   {CVES[selectedNode.cve].isKEV && <span style={{ color: '#ef4444', fontWeight: 800 }}>✦ KEV</span>}
@@ -1015,9 +1716,21 @@ export default function DigitalTwin() {
 
         {/* Asset labels (Layer 2) */}
         {layers.assets && (
-          <div style={{ position: 'absolute', bottom: 24, left: 24, pointerEvents: 'none', background: 'rgba(10,14,26,0.85)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: '12px 16px', backdropFilter: 'blur(8px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-            <div style={{ fontSize: 10, color: '#475569', letterSpacing: 2, marginBottom: 8, fontWeight: 800, textTransform: 'uppercase' }}>ASSET LEGEND</div>
-            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ 
+            position: 'absolute', 
+            bottom: 24, 
+            left: simState !== 'idle' ? 490 : 24, 
+            pointerEvents: 'none', 
+            background: 'rgba(10,14,26,0.85)', 
+            border: '1px solid rgba(255,255,255,0.05)', 
+            borderRadius: 10, 
+            padding: '14px 18px', 
+            backdropFilter: 'blur(8px)', 
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            transition: 'left 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
+            <div style={{ fontSize: 14, color: '#64748b', letterSpacing: 2, marginBottom: 8, fontWeight: 800, textTransform: 'uppercase' }}>ASSET LEGEND</div>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               {[
                 { color: '#3b82f6', label: 'Web/Network' },
                 { color: '#a855f7', label: 'API/Gateway' },
@@ -1025,8 +1738,8 @@ export default function DigitalTwin() {
                 { color: '#eab308', label: 'Database' },
                 { color: '#94a3b8', label: 'Network Devices' },
               ].map(item => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color }}/>
+                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, color: '#94a3b8', fontWeight: 600 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: item.color }}/>
                   {item.label}
                 </div>
               ))}
@@ -1036,11 +1749,11 @@ export default function DigitalTwin() {
 
         {/* Identity legend (Layer 3) */}
         {layers.identities && (
-          <div style={{ position: 'absolute', bottom: 60, right: 24, pointerEvents: 'none', background: 'rgba(10,14,26,0.85)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: '14px 18px', backdropFilter: 'blur(8px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-            <div style={{ fontSize: 10, color: '#475569', letterSpacing: 2, marginBottom: 10, fontWeight: 800, textTransform: 'uppercase' }}>IDENTITY ACCESS</div>
+          <div style={{ position: 'absolute', bottom: 60, right: 24, pointerEvents: 'none', background: 'rgba(10,14,26,0.85)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 10, padding: '16px 20px', backdropFilter: 'blur(8px)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
+            <div style={{ fontSize: 14, color: '#64748b', letterSpacing: 2, marginBottom: 12, fontWeight: 800, textTransform: 'uppercase' }}>IDENTITY ACCESS</div>
             {IDENTITIES.map(id => (
-              <div key={id.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#94a3b8', marginBottom: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: id.color }} />
+              <div key={id.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 16, color: '#94a3b8', marginBottom: 8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: id.color }} />
                 <span style={{ color: id.color, fontWeight: 700 }}>{id.label}</span>
                 <span style={{ color: '#475569', fontWeight: 600 }}>{id.role}</span>
               </div>
@@ -1070,22 +1783,94 @@ export default function DigitalTwin() {
             padding: '0 24px',
           }}>
             {simState === 'breach' && (
-              <span style={{ color: '#ef4444', fontWeight: 800, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#ef4444', fontWeight: 800, fontSize: 15, letterSpacing: 2, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="pulse-dot-red" /> ⚠ BREACH DETECTED — INCIDENT RESPONSE ACTIVATED
               </span>
             )}
             {simState === 'remediated' && (
-              <span style={{ color: '#22c55e', fontWeight: 800, fontSize: 13, letterSpacing: 2, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ color: '#22c55e', fontWeight: 800, fontSize: 15, letterSpacing: 2, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="pulse-dot-green" /> ✅ AI REMEDIATION TRIGGERED — THREAT CONTAINED
               </span>
             )}
           </div>
         )}
 
+        {/* Top-Right Voice Narration Utility HUD */}
+        <div style={{
+          position: 'absolute',
+          top: 24,
+          right: 24,
+          height: '44px',
+          padding: '0 16px',
+          background: 'rgba(7, 10, 22, 0.8)',
+          backdropFilter: 'blur(12px)',
+          border: `1px solid ${voiceState.isSpeaking ? 'rgba(59, 130, 246, 0.6)' : 'rgba(255, 255, 255, 0.08)'}`,
+          boxShadow: voiceState.isSpeaking 
+            ? '0 0 15px rgba(59, 130, 246, 0.35), inset 0 0 10px rgba(59, 130, 246, 0.05)' 
+            : '0 4px 20px rgba(0, 0, 0, 0.4)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          zIndex: 35,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', userSelect: 'none' }}>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#64748b', letterSpacing: '1px', textTransform: 'uppercase' }}>AI NARRATOR</span>
+            <span style={{ fontSize: '15px', fontWeight: 700, color: voiceState.isSpeaking ? '#60a5fa' : '#94a3b8', transition: 'color 0.3s' }}>
+              {voiceState.isMuted ? 'MUTED' : (voiceState.isSpeaking ? 'SPEAKING' : 'READY')}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', height: '14px', width: '25px', justifyContent: 'center' }}>
+            {[1, 2, 3, 4, 5].map(barId => (
+              <div
+                key={barId}
+                style={{
+                  width: '2px',
+                  height: voiceState.isSpeaking ? '100%' : '3px',
+                  backgroundColor: '#22d3ee',
+                  boxShadow: '0 0 4px #22d3ee',
+                  borderRadius: '1px',
+                  animation: voiceState.isSpeaking ? `voice-wave-bob 0.8s ease-in-out infinite alternate` : 'none',
+                  animationDelay: `${barId * 0.15}s`,
+                  transformOrigin: 'bottom',
+                  transition: 'height 0.3s'
+                }}
+              />
+            ))}
+          </div>
+
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.08)' }} />
+
+          <button
+            onClick={() => voiceNarrator.toggleMute()}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: voiceState.isMuted ? '#f87171' : '#60a5fa',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
+              borderRadius: '4px',
+              transition: 'all 0.2s',
+              outline: 'none'
+            }}
+            title={voiceState.isMuted ? "Unmute AI Narration" : "Mute AI Narration"}
+          >
+            {voiceState.isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+        </div>
+
         {/* Orbit hint */}
-        <div style={{ position: 'absolute', bottom: 24, right: 24, fontSize: 10, color: '#1e3a5f', letterSpacing: 2, pointerEvents: 'none', fontWeight: 700 }}>
+        <div style={{ position: 'absolute', bottom: 24, right: 24, fontSize: 15, color: '#1e3a5f', letterSpacing: 2, pointerEvents: 'none', fontWeight: 700 }}>
           DRAG TO ORBIT · SCROLL TO ZOOM
         </div>
+
+        {/* Cinematic Replay Timeline */}
+        <AttackReplayTimeline simState={simState} onReset={handleReset} />
       </div>
 
       {/* ── RIGHT PANEL (Fixed 420px Width, Enterprise SOC UI) ─────────────────────────────────── */}
@@ -1100,16 +1885,16 @@ export default function DigitalTwin() {
       >
 
         {/* Header */}
-        <div style={{ padding: '24px 24px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(10,14,26,0.3)' }}>
-          <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: 3, color: '#3b82f6', marginBottom: 6 }}>SARATHI CYBERDEFENSE</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: '#ffffff', letterSpacing: -0.5, marginBottom: 4 }}>Digital Twin Control</div>
-          <div style={{ fontSize: 12, color: '#64748b', letterSpacing: 0.5 }}>Real-Time Infrastructure Threat Simulation</div>
+        <div style={{ padding: '28px 28px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(10,14,26,0.3)' }}>
+          <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: 3, color: '#3b82f6', marginBottom: 6 }}>SARATHI CYBERDEFENSE</div>
+          <div style={{ fontSize: 38, fontWeight: 800, color: '#ffffff', letterSpacing: -0.5, marginBottom: 4 }}>Digital Twin Control</div>
+          <div style={{ fontSize: 18, color: '#64748b', letterSpacing: 0.5 }}>Real-Time Infrastructure Threat Simulation</div>
         </div>
 
         {/* Layer Controls */}
         <div style={{ padding: '24px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#f1f5f9', letterSpacing: 0.5, marginBottom: 16, textTransform: 'uppercase' }}>Layer Controls</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 23, fontWeight: 700, color: '#f1f5f9', letterSpacing: 0.5, marginBottom: 16, textTransform: 'uppercase' }}>Layer Controls</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
               { key: 'network',    icon: '🌐', label: 'Network Topology' },
               { key: 'assets',     icon: '💻', label: 'Assets & Infrastructure' },
@@ -1124,20 +1909,20 @@ export default function DigitalTwin() {
                   onClick={() => toggleLayer(key)}
                   className={isActive ? 'soc-btn soc-btn-active' : 'soc-btn'}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 12,
-                    padding: '12px 16px', borderRadius: 8, cursor: 'pointer', width: '100%', textAlign: 'left',
-                    background: isActive ? 'rgba(59,130,246,0.15)' : 'rgba(17,24,39,0.4)',
-                    border: isActive ? '1px solid rgba(59,130,246,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '16px 20px', borderRadius: 8, cursor: 'pointer', width: '100%', textAlign: 'left',
+                    background: isActive ? 'rgba(59,130,246,0.18)' : 'rgba(17,24,39,0.4)',
+                    border: isActive ? '1px solid rgba(59,130,246,0.5)' : '1px solid rgba(255,255,255,0.08)',
                     borderLeft: isActive ? '4px solid #3b82f6' : '4px solid transparent',
                     color: isActive ? '#ffffff' : '#94a3b8',
-                    fontSize: 13, fontWeight: isActive ? 700 : 500,
+                    fontSize: 18, fontWeight: isActive ? 700 : 500,
                     boxShadow: isActive ? '0 0 15px rgba(59,130,246,0.2)' : 'none',
                   }}
                 >
-                  <span style={{ fontSize: 16 }}>{icon}</span>
+                  <span style={{ fontSize: 18 }}>{icon}</span>
                   <span style={{ flex: 1, letterSpacing: '0.5px' }}>{label}</span>
                   <span style={{
-                    width: 8, height: 8, borderRadius: '50%',
+                    width: 10, height: 10, borderRadius: '50%',
                     background: isActive ? '#3b82f6' : '#1f2937',
                     boxShadow: isActive ? '0 0 8px #3b82f6' : 'none',
                   }} />
@@ -1149,17 +1934,17 @@ export default function DigitalTwin() {
 
         {/* Threat State */}
         <div style={{ padding: '24px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#f1f5f9', letterSpacing: 0.5, marginBottom: 16, textTransform: 'uppercase' }}>Threat State</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ fontSize: 23, fontWeight: 700, color: '#f1f5f9', letterSpacing: 0.5, marginBottom: 16, textTransform: 'uppercase' }}>Threat State</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             {[
               { label: 'DEFCON', value: defcon, color: defconColor(), suffix: '' },
               { label: 'Active CVEs', value: activeCVEs, color: '#f97316', suffix: '' },
               { label: 'Compromised IDs', value: compromisedIds, color: compromisedIds > 0 ? '#ef4444' : '#22c55e', suffix: '' },
               { label: 'Anomalous Tx', value: anomalousTx, color: anomalousTx > 0 ? '#eab308' : '#22c55e', suffix: '' },
             ].map(item => (
-              <div key={item.label} style={{ background: 'rgba(13, 17, 23, 0.6)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 10, padding: '14px 16px' }}>
-                <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, letterSpacing: 1.5, marginBottom: 6, textTransform: 'uppercase' }}>{item.label}</div>
-                <div style={{ fontSize: 24, fontWeight: 700, color: item.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.1 }}>
+              <div key={item.label} style={{ background: 'rgba(13, 17, 23, 0.6)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 10, padding: '16px 18px' }}>
+                <div style={{ fontSize: 15, color: '#64748b', fontWeight: 650, letterSpacing: 1.5, marginBottom: 8, textTransform: 'uppercase' }}>{item.label}</div>
+                <div style={{ fontSize: 38, fontWeight: 700, color: item.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.1 }}>
                   {item.value}{item.suffix}
                 </div>
               </div>
@@ -1167,12 +1952,12 @@ export default function DigitalTwin() {
           </div>
 
           {/* Financial Liability Card */}
-          <div style={{ marginTop: 12, background: 'rgba(13, 17, 23, 0.6)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 10, padding: '14px 16px' }}>
-            <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600, letterSpacing: 1.5, marginBottom: 8, textTransform: 'uppercase' }}>Financial Liability</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: liability > 0 ? '#ef4444' : '#22c55e', fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>
+          <div style={{ marginTop: 14, background: 'rgba(13, 17, 23, 0.6)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: 10, padding: '16px 18px' }}>
+            <div style={{ fontSize: 17, color: '#64748b', fontWeight: 650, letterSpacing: 1.5, marginBottom: 10, textTransform: 'uppercase' }}>Financial Liability</div>
+            <div style={{ fontSize: 36, fontWeight: 700, color: liability > 0 ? '#ef4444' : '#22c55e', fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>
               ${liability.toLocaleString()}
             </div>
-            <div style={{ marginTop: 8, height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{ marginTop: 10, height: 8, background: 'rgba(255,255,255,0.05)', borderRadius: 99, overflow: 'hidden' }}>
               <div style={{
                 height: '100%', borderRadius: 99, transition: 'width 0.2s',
                 width: `${Math.min(100, (liability / 2300000) * 100)}%`,
@@ -1185,13 +1970,13 @@ export default function DigitalTwin() {
 
         {/* Attack Simulation */}
         <div style={{ padding: '24px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: '#f1f5f9', letterSpacing: 0.5, marginBottom: 16, textTransform: 'uppercase' }}>Attack Simulation</div>
+          <div style={{ fontSize: 23, fontWeight: 700, color: '#f1f5f9', letterSpacing: 0.5, marginBottom: 16, textTransform: 'uppercase' }}>Attack Simulation</div>
           <select
             value={selectedScenario}
             onChange={e => setSelectedScenario(e.target.value)}
             style={{
-              width: '100%', padding: '12px 14px', background: 'rgba(13, 17, 23, 0.8)', border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 8, color: '#e2e8f0', fontSize: 13, marginBottom: 12, outline: 'none',
+              width: '100%', padding: '16px 20px', background: 'rgba(13, 17, 23, 0.8)', border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 8, color: '#e2e8f0', fontSize: 18, marginBottom: 14, outline: 'none',
               cursor: 'pointer',
             }}
           >
@@ -1199,12 +1984,12 @@ export default function DigitalTwin() {
               <option key={key} value={key} style={{ background: '#0a0e1a', color: '#e2e8f0' }}>{sc.name}</option>
             ))}
           </select>
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
             <button
               onClick={handleSimulate}
               disabled={simState !== 'idle'}
               style={{
-                flex: 1, padding: '12px 0', borderRadius: 8, fontWeight: 700, fontSize: 13, letterSpacing: 0.5,
+                flex: 1, padding: '16px 0', borderRadius: 8, fontWeight: 800, fontSize: 18, letterSpacing: 0.5,
                 cursor: simState !== 'idle' ? 'not-allowed' : 'pointer',
                 background: simState !== 'idle' ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.85)',
                 border: '1px solid rgba(239,68,68,0.4)',
@@ -1218,7 +2003,7 @@ export default function DigitalTwin() {
             <button
               onClick={handleReset}
               style={{
-                padding: '12px 18px', borderRadius: 8, fontWeight: 600, fontSize: 13,
+                padding: '16px 24px', borderRadius: 8, fontWeight: 700, fontSize: 18,
                 cursor: 'pointer', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255, 255, 255, 0.08)',
                 color: '#94a3b8', transition: 'all 0.2s',
               }}
@@ -1227,23 +2012,23 @@ export default function DigitalTwin() {
             </button>
           </div>
           {simState === 'running' && (
-            <div style={{ marginTop: 10, fontSize: 12, color: '#ef4444', textAlign: 'center', fontWeight: 700, letterSpacing: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <div style={{ marginTop: 12, fontSize: 18, color: '#ef4444', textAlign: 'center', fontWeight: 800, letterSpacing: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <span className="pulse-dot-red" /> ATTACK IN PROGRESS
             </div>
           )}
         </div>
 
         {/* Live Log Feed */}
-        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 16 }}>
-          <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(10,14,26,0.1)' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#f1f5f9', letterSpacing: 0.5, textTransform: 'uppercase' }}>Live Event Log</span>
-            <span style={{ fontSize: 11, color: '#3b82f6', fontWeight: 700, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 6px #3b82f6' }} /> STREAM
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 20 }}>
+          <div style={{ padding: '20px 24px 14px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(10,14,26,0.1)' }}>
+            <span style={{ fontSize: 20, fontWeight: 700, color: '#f1f5f9', letterSpacing: 0.5, textTransform: 'uppercase' }}>Live Event Log</span>
+            <span style={{ fontSize: 17, color: '#3b82f6', fontWeight: 800, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 8px #3b82f6' }} /> STREAM
             </span>
           </div>
-          <div className="custom-scrollbar" style={{ height: '320px', overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 6, background: '#04060b' }}>
+          <div className="custom-scrollbar" style={{ height: '360px', overflowY: 'auto', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8, background: '#04060b' }}>
             {logLines.length === 0 && (
-              <div style={{ fontSize: 12, color: '#475569', textAlign: 'center', marginTop: 32, fontFamily: "'JetBrains Mono', monospace" }}>
+              <div style={{ fontSize: 16, color: '#475569', textAlign: 'center', marginTop: 32, fontFamily: "'JetBrains Mono', monospace" }}>
                 [NO EVENT STREAM ACTIVE - ENABLE LOGS LAYER OR RUN SIMULATION]
               </div>
             )}
@@ -1252,19 +2037,19 @@ export default function DigitalTwin() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                padding: '8px 12px',
-                fontSize: 12,
+                padding: '12px 16px',
+                fontSize: 15,
                 fontFamily: "'JetBrains Mono', monospace",
-                background: i % 2 === 0 ? 'rgba(17, 24, 39, 0.35)' : 'transparent',
+                background: i % 2 === 0 ? 'rgba(17, 24, 39, 0.65)' : 'rgba(8, 12, 24, 0.45)',
                 borderBottom: '1px solid rgba(255, 255, 255, 0.02)',
                 borderRadius: 6,
               }}>
-                <span style={{ color: '#475569', flexShrink: 0 }}>{line.time}</span>
+                <span style={{ color: '#cbd5e1', flexShrink: 0, fontSize: 15 }}>{line.time}</span>
                 {renderStatusBadge(line.type)}
-                <span style={{ color: '#60a5fa', flexShrink: 0, fontWeight: 600 }}>
-                  {line.src} <span style={{ color: '#475569' }}>→</span> {line.dst}
+                <span style={{ color: '#60a5fa', flexShrink: 0, fontWeight: 700, fontSize: 16 }}>
+                  {line.src} <span style={{ color: '#64748b', fontWeight: 500 }}>→</span> {line.dst}
                 </span>
-                <span style={{ color: '#e2e8f0', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={line.msg}>
+                <span style={{ color: '#ffffff', fontSize: 15, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={line.msg}>
                   {line.msg}
                 </span>
               </div>
@@ -1281,11 +2066,11 @@ export default function DigitalTwin() {
             boxShadow: '0 16px 48px rgba(0,0,0,0.9)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 12 }}>{selectedCVE}</span>
+              <span style={{ fontWeight: 800, color: '#ef4444', fontSize: 14 }}>{selectedCVE}</span>
               <button onClick={() => setSelectedCVE(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>✕</button>
             </div>
-            <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>{CVES[selectedCVE].desc}</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 11 }}>
+            <div style={{ fontSize: 13, color: '#94a3b8', marginBottom: 8 }}>{CVES[selectedCVE].desc}</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
               <span style={{ color: '#f97316' }}>CVSS {CVES[selectedCVE].cvss}</span>
               <span style={{ color: '#eab308' }}>EPSS {CVES[selectedCVE].epss}</span>
               <span style={{ color: CVES[selectedCVE].severity === 'CRITICAL' ? '#ef4444' : '#f97316', fontWeight: 700 }}>{CVES[selectedCVE].severity}</span>
