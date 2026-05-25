@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, Bell, CheckCircle, Eye, EyeOff, Filter, RefreshCw, AlertTriangle, BookOpen, Loader2 } from 'lucide-react';
 import client, { alertsApi } from '../api/client';
-import PlaybookModal from './PlaybookModal';
+import PlaybookModal, { playbookCache, buildFallbackPlaybook } from './PlaybookModal';
 
 export default function AlertPanel() {
   const [alerts, setAlerts] = useState([]);
@@ -22,6 +22,17 @@ export default function AlertPanel() {
         setAlerts(data);
         setLoading(false);
         setRefreshing(false);
+        
+        // Pre-calculate and cache lightweight playbooks instantly
+        if (data && Array.isArray(data)) {
+          data.forEach(alert => {
+            const key = alert?.cve_id || alert?.id;
+            if (key && !playbookCache[key]) {
+              console.log(`[AlertPanel] Pre-computing and caching playbook for ${key}`);
+              playbookCache[key] = buildFallbackPlaybook(alert);
+            }
+          });
+        }
       })
       .catch((err) => {
         console.error("Failed to poll alerts:", err);

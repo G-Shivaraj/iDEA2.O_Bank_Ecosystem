@@ -357,6 +357,67 @@ export default function DigitalTwin() {
     }
   }, [simState]);
 
+  // --- AI Governance Layer Event Listener ---
+  useEffect(() => {
+    const handleRemediateEvent = (e) => {
+      console.log("%c[DigitalTwin] Received AI Governance Remediation Event:", "color: #10b981; font-weight: bold;", e.detail);
+      
+      // Stop the liability increment intervals
+      if (liabilityIntervalRef.current) {
+        clearInterval(liabilityIntervalRef.current);
+      }
+      
+      // Advance sim time to Stage 5 immediately (>= 8.0 seconds)
+      simTimeRef.current = 8.0;
+      
+      // Clear any pending breach or automated remediation timers
+      if (breachTimerRef.current) clearTimeout(breachTimerRef.current);
+      if (remTimerRef.current) clearTimeout(remTimerRef.current);
+      
+      // Update visual stats and state
+      simStateRef.current = 'remediated';
+      setSimState('remediated');
+      setDefcon(5);
+      setLiability(0);
+      liabilityRef.current = 0;
+      setAnomalousTx(0);
+      setCompromisedIds(0);
+      setActiveCVEs(0); // Mapped CVE is resolved
+    };
+
+    window.addEventListener('ai-governance-remediate', handleRemediateEvent);
+
+    // Initial check on mount: has remediation been approved via governance layer?
+    const checkState = localStorage.getItem('simState');
+    if (checkState === 'remediated') {
+      console.log("%c[DigitalTwin] Initializing in remediated state from AI Governance storage.", "color: #10b981; font-weight: bold;");
+      
+      // Stop intervals
+      if (liabilityIntervalRef.current) clearInterval(liabilityIntervalRef.current);
+      
+      simTimeRef.current = 8.0;
+      simStateRef.current = 'remediated';
+      setSimState('remediated');
+      setDefcon(5);
+      setLiability(0);
+      liabilityRef.current = 0;
+      setAnomalousTx(0);
+      setCompromisedIds(0);
+      setActiveCVEs(0);
+      
+      // Set the path to green
+      const scenario = SCENARIOS[selectedScenario];
+      if (scenario) {
+        attackPathRef.current = scenario.path;
+        setAttackPathNodes([...scenario.path]);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('ai-governance-remediate', handleRemediateEvent);
+    };
+  }, [selectedScenario]);
+
   // ── Badge & Shield Helpers ────────────────────────────────────────────────
   const addBadgeToNode = (nodeId, text, colorHex) => {
     if (compromisedBadgesRef.current[nodeId]) {
@@ -1411,15 +1472,25 @@ export default function DigitalTwin() {
       simStateRef.current = 'breach';
     }, 5000);
 
-    // Remediation banner
+    // Remediation is no longer automatic - it awaits human validation in the alerts console!
+    // We comment this out so it pauses at 'breach' state with active alerts and ticking liability.
+    /*
     remTimerRef.current = setTimeout(() => {
       setSimState('remediated');
       simStateRef.current = 'remediated';
       clearInterval(liabilityIntervalRef.current);
     }, 8000);
+    */
   }, [selectedScenario, appendLog]);
 
   const handleReset = useCallback(() => {
+    localStorage.removeItem('simState');
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('remediated_')) {
+        localStorage.removeItem(key);
+      }
+    });
+
     clearInterval(attackLogIntervalRef.current);
     clearInterval(liabilityIntervalRef.current);
     clearTimeout(breachTimerRef.current);
@@ -1509,7 +1580,7 @@ export default function DigitalTwin() {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', gap: '0', width: '100%', height: '100%', fontFamily: "'Inter', 'JetBrains Mono', monospace", background: '#020617', overflow: 'hidden' }}>
+    <div className="twin-container">
       
       {/* Dynamic Embedded CSS Styles */}
       <style>{`
@@ -1579,16 +1650,71 @@ export default function DigitalTwin() {
           animation: pulse-green 1.5s infinite ease-in-out;
           box-shadow: 0 0 8px #22c55e;
         }
+
+        /* Layout containers */
+        .twin-container {
+          display: flex;
+          gap: 0;
+          width: 100%;
+          height: 100vh;
+          font-family: 'Inter', 'JetBrains Mono', monospace;
+          background: #020617;
+          overflow: hidden;
+        }
+
+        .twin-viewport {
+          flex: 1;
+          position: relative;
+          overflow: hidden;
+          background: radial-gradient(circle at center, #070e24 0%, #020617 100%);
+          box-shadow: inset 0 0 100px rgba(0,0,0,0.85);
+          height: 100%;
+        }
+
+        .twin-sidebar {
+          flex: 0 0 420px;
+          width: 420px;
+          min-width: 420px;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+          background: #080b14;
+          border-left: 1px solid rgba(255, 255, 255, 0.05);
+          overflow-y: auto;
+          height: 100vh;
+          padding-bottom: 120px;
+          box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (max-width: 1024px) {
+          .twin-container {
+            flex-direction: column;
+            overflow-y: auto;
+            height: auto;
+            min-height: 100vh;
+          }
+          .twin-viewport {
+            height: 60vh;
+            min-height: 400px;
+            flex: none;
+            width: 100%;
+          }
+          .twin-sidebar {
+            flex: none;
+            width: 100%;
+            min-width: 100%;
+            height: auto;
+            overflow-y: visible;
+            padding-bottom: 60px;
+            border-left: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: none;
+          }
+        }
       `}</style>
 
       {/* ── LEFT: 3D Canvas (Fills Remaining Space) ─────────────────────────────────── */}
-      <div style={{
-        flex: 1,
-        position: 'relative',
-        overflow: 'hidden',
-        background: 'radial-gradient(circle at center, #070e24 0%, #020617 100%)', // Subtle blue radial gradient behind scene
-        boxShadow: 'inset 0 0 100px rgba(0,0,0,0.85)', // Vignette effect
-      }}>
+      <div className="twin-viewport">
         {/* Canvas mount */}
         <div ref={mountRef} style={{ width: '100%', height: '100%', cursor: 'grab' }} />
 
@@ -1622,13 +1748,12 @@ export default function DigitalTwin() {
         {layers.network && (
           <div style={{ 
             position: 'absolute', 
-            bottom: simState !== 'idle' ? 460 : 100, 
+            bottom: 100, 
             left: 24, 
             pointerEvents: 'none', 
             display: 'flex', 
             flexDirection: 'column', 
             gap: 8,
-            transition: 'bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
           }}>
             {[
               { label: 'CORE BANKING ZONE', color: '#eab308' },
@@ -1719,7 +1844,7 @@ export default function DigitalTwin() {
           <div style={{ 
             position: 'absolute', 
             bottom: 24, 
-            left: simState !== 'idle' ? 490 : 24, 
+            left: 24, 
             pointerEvents: 'none', 
             background: 'rgba(10,14,26,0.85)', 
             border: '1px solid rgba(255,255,255,0.05)', 
@@ -1727,7 +1852,6 @@ export default function DigitalTwin() {
             padding: '14px 18px', 
             backdropFilter: 'blur(8px)', 
             boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-            transition: 'left 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
           }}>
             <div style={{ fontSize: 14, color: '#64748b', letterSpacing: 2, marginBottom: 8, fontWeight: 800, textTransform: 'uppercase' }}>ASSET LEGEND</div>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -1868,25 +1992,14 @@ export default function DigitalTwin() {
         <div style={{ position: 'absolute', bottom: 24, right: 24, fontSize: 15, color: '#1e3a5f', letterSpacing: 2, pointerEvents: 'none', fontWeight: 700 }}>
           DRAG TO ORBIT · SCROLL TO ZOOM
         </div>
-
-        {/* Cinematic Replay Timeline */}
-        <AttackReplayTimeline simState={simState} onReset={handleReset} />
       </div>
 
       {/* ── RIGHT PANEL (Fixed 420px Width, Enterprise SOC UI) ─────────────────────────────────── */}
-      <div 
-        className="custom-scrollbar"
-        style={{
-          flex: '0 0 420px', width: '420px', minWidth: '420px', display: 'flex', flexDirection: 'column', gap: 0,
-          background: '#080b14', borderLeft: '1px solid rgba(255, 255, 255, 0.05)', overflowY: 'auto',
-          height: '100%', paddingBottom: '120px',
-          boxShadow: '-10px 0 30px rgba(0, 0, 0, 0.5)'
-        }}
-      >
+      <div className="twin-sidebar custom-scrollbar">
 
         {/* Header */}
         <div style={{ padding: '28px 28px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(10,14,26,0.3)' }}>
-          <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: 3, color: '#3b82f6', marginBottom: 6 }}>SARATHI CYBERDEFENSE</div>
+          <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: 3, color: '#3b82f6', marginBottom: 6 }}>CYBERDEFENSE AI</div>
           <div style={{ fontSize: 38, fontWeight: 800, color: '#ffffff', letterSpacing: -0.5, marginBottom: 4 }}>Digital Twin Control</div>
           <div style={{ fontSize: 18, color: '#64748b', letterSpacing: 0.5 }}>Real-Time Infrastructure Threat Simulation</div>
         </div>
@@ -1966,6 +2079,11 @@ export default function DigitalTwin() {
               }} />
             </div>
           </div>
+        </div>
+
+        {/* Forensic Replay Timeline */}
+        <div style={{ padding: '0 24px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+          <AttackReplayTimeline simState={simState} onReset={handleReset} />
         </div>
 
         {/* Attack Simulation */}

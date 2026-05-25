@@ -268,13 +268,10 @@ export default function AttackReplayTimeline({ simState, onReset }) {
     <div
       className="attack-replay-panel"
       style={{
-        position: 'absolute',
-        bottom: '32px',
-        left: '24px',
-        width: '520px',
-        height: '720px',
-        maxHeight: '78vh',
-        minHeight: '680px',
+        position: 'relative',
+        width: '100%',
+        height: '340px',
+        maxHeight: '340px',
         background: 'rgba(7, 10, 22, 0.85)',
         backdropFilter: 'blur(16px)',
         border: '1px solid rgba(59, 130, 246, 0.25)',
@@ -282,10 +279,12 @@ export default function AttackReplayTimeline({ simState, onReset }) {
         borderRadius: '12px',
         display: 'flex',
         flexDirection: 'column',
-        zIndex: 40,
+        zIndex: 10,
         fontFamily: "'JetBrains Mono', monospace",
-        overflow: 'visible',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+        overflow: 'hidden',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+        marginTop: '16px',
+        marginBottom: '16px'
       }}
     >
       {/* Header Info */}

@@ -263,3 +263,183 @@ def get_playbook_history():
     """
     with history_lock:
         return playbook_history
+
+
+# ── AI Governance & Human-in-the-Loop Endpoints ───────────────────────────────
+
+class GovernanceActionRequest(BaseModel):
+    alert_id: str
+    cve_id: Optional[str] = None
+    actor: str = "Tier-2 SOC Analyst"
+    reason: Optional[str] = None
+
+governance_audit_trail = [
+    {
+        "timestamp": datetime.now().isoformat() + "Z",
+        "event": "AI Governance Engine Activated",
+        "actor": "System Core",
+        "details": "Sarathi CyberDefense banking governance layer initialized and active.",
+        "status": "SUCCESS"
+    }
+]
+
+@router.post(
+    "/approve",
+    summary="Approve and execute AI playbook remediation",
+)
+def approve_playbook(request: GovernanceActionRequest):
+    """
+    Approve remediation action. Resolves the active alert and registers containment logs.
+    """
+    from api.routes_alerts import alerts_store
+    alert_found = False
+    for alert in alerts_store:
+        if alert["id"] == request.alert_id:
+            alert["status"] = "RESOLVED"
+            alert_found = True
+            break
+            
+    timestamp = datetime.now().isoformat() + "Z"
+    cve = request.cve_id or "CVE-2026-1043"
+    
+    new_logs = [
+        {
+            "timestamp": timestamp,
+            "event": "AI Recommendation Generated",
+            "actor": "AI Engine (Gemini)",
+            "details": f"Remediation playbook for {cve} generated with 82% confidence.",
+            "status": "SUCCESS"
+        },
+        {
+            "timestamp": timestamp,
+            "event": "Human Analyst Reviewed",
+            "actor": request.actor,
+            "details": f"Analyst commenced technical validation of containment plan.",
+            "status": "INFO"
+        },
+        {
+            "timestamp": timestamp,
+            "event": "Remediation Approved & Executed",
+            "actor": request.actor,
+            "details": f"Analyst approved action. AI safely executed containment and segment isolation.",
+            "status": "APPROVED"
+        }
+    ]
+    
+    with history_lock:
+        governance_audit_trail.extend(new_logs)
+        
+    return {
+        "status": "Success",
+        "remediation_status": "Executed",
+        "threat_state": "RESOLVED",
+        "audit_logs": new_logs,
+        "full_audit_trail": governance_audit_trail
+    }
+
+
+@router.post(
+    "/escalate",
+    summary="Escalate playbook remediation to Tier-3 SOC Team",
+)
+def escalate_playbook(request: GovernanceActionRequest):
+    """
+    Escalate remediation due to low confidence or high severity. Marks alert status.
+    """
+    from api.routes_alerts import alerts_store
+    for alert in alerts_store:
+        if alert["id"] == request.alert_id:
+            alert["status"] = "ACKNOWLEDGED"
+            break
+            
+    timestamp = datetime.now().isoformat() + "Z"
+    cve = request.cve_id or "CVE-2026-1043"
+    reason = request.reason or "AI confidence below enterprise threshold."
+    
+    new_logs = [
+        {
+            "timestamp": timestamp,
+            "event": "AI Action Escalated to SOC",
+            "actor": "AI Orchestrator",
+            "details": "Remediation automatically halted. Low confidence threshold.",
+            "status": "WARNING"
+        },
+        {
+            "timestamp": timestamp,
+            "event": "Escalated to Tier-3 Incident Response",
+            "actor": request.actor,
+            "details": f"Ticket assigned. Reason: {reason}",
+            "status": "WARNING"
+        }
+    ]
+    
+    with history_lock:
+        governance_audit_trail.extend(new_logs)
+        
+    ticket_id = f"SOC-2026-{abs(hash(request.alert_id)) % 10000:04d}"
+    return {
+        "status": "Success",
+        "remediation_status": "Escalated",
+        "threat_state": "ACKNOWLEDGED",
+        "ticket": {
+            "ticketId": ticket_id,
+            "assignedTeam": "Tier-3 Incident Response",
+            "reason": reason,
+            "timestamp": timestamp,
+            "slaMinutes": 15
+        },
+        "audit_logs": new_logs,
+        "full_audit_trail": governance_audit_trail
+    }
+
+
+@router.post(
+    "/reject",
+    summary="Reject AI remediation recommendation",
+)
+def reject_playbook(request: GovernanceActionRequest):
+    """
+    Reject AI recommendation. Preserves active threat status and records audit trails.
+    """
+    from api.routes_alerts import alerts_store
+    for alert in alerts_store:
+        if alert["id"] == request.alert_id:
+            alert["status"] = "UNRESOLVED"
+            break
+            
+    timestamp = datetime.now().isoformat() + "Z"
+    cve = request.cve_id or "CVE-2026-1043"
+    
+    new_logs = [
+        {
+            "timestamp": timestamp,
+            "event": "AI Recommendation Rejected",
+            "actor": request.actor,
+            "details": f"AI remediation proposal for {cve} rejected by analyst. Preserved active state.",
+            "status": "REJECTED"
+        }
+    ]
+    
+    with history_lock:
+        governance_audit_trail.extend(new_logs)
+        
+    return {
+        "status": "Success",
+        "remediation_status": "Rejected",
+        "threat_state": "UNRESOLVED",
+        "audit_logs": new_logs,
+        "full_audit_trail": governance_audit_trail
+    }
+
+
+@router.get(
+    "/audit",
+    summary="Get full governance audit trail feed",
+)
+def get_audit_trail():
+    """
+    Returns the immutable list of AI governance validations and containment logs.
+    """
+    with history_lock:
+        return governance_audit_trail
+

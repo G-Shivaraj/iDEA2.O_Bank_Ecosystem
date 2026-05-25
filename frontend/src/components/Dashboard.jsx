@@ -286,7 +286,7 @@ export default function Dashboard() {
               {(aiState === 'loading' || (aiState === 'streaming' && aiLogs.length > 0 && aiDisplayText.length === 0)) && (
                 <div className="bg-black/60 rounded-xl border border-cyan-950/60 p-5 font-mono text-xs text-cyan-400 space-y-1.5 min-h-[180px]">
                   <div className="text-cyan-600 mb-3 text-[11px] tracking-widest uppercase">
-                    Sarathi AI Engine | Gemini 1.5 Pro | Threat Analysis Mode
+                    CyberDefense AI Engine | Gemini 1.5 Pro | Threat Analysis Mode
                   </div>
                   <AnimatePresence>
                     {aiLogs.map((log, i) => (
@@ -329,7 +329,7 @@ export default function Dashboard() {
                     <span className="w-3 h-3 rounded-full bg-amber-500/70" />
                     <span className="w-3 h-3 rounded-full bg-emerald-500/70" />
                     <span className="ml-4 text-[11px] font-mono text-slate-600 tracking-widest uppercase">
-                      sarathi-ai | threat-intelligence-analysis | {new Date().toLocaleTimeString()}
+                      cyberdefense-ai | threat-intelligence-analysis | {new Date().toLocaleTimeString()}
                     </span>
                     {aiState === 'streaming' && (
                       <div className="ml-auto flex items-center gap-1.5 text-[11px] font-mono text-cyan-500">
