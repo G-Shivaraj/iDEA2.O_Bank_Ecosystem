@@ -355,7 +355,7 @@ export default function AttackReplayTimeline({ simState, onReset }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Timer size={14} className="text-slate-500 dark:text-slate-600 dark:text-slate-400" />
+          <Timer size={14} className="text-slate-500 dark:text-slate-400" />
           <span>TIME: <span style={{ color: '#60a5fa', fontWeight: 'bold' }}>{secondsFormatted}</span></span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

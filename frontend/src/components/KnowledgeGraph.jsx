@@ -3,8 +3,10 @@ import ForceGraph2D from 'react-force-graph-2d';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, RefreshCw, X, ChevronRight, Zap, Target, BookOpen, AlertTriangle } from 'lucide-react';
 import client, { graphApi } from '../api/client';
+import { useTheme } from '../hooks/useTheme';
 
 export default function KnowledgeGraph() {
+  const { isDark } = useTheme();
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [loading, setLoading] = useState(true);
   const containerRef = useRef(null);
@@ -310,14 +312,14 @@ export default function KnowledgeGraph() {
   };
 
   return (
-    <div className="flex h-[82vh] w-full max-w-[92rem] mx-auto bg-[#0f172a]/20 border border-slate-800/80 rounded-xl overflow-hidden relative shadow-2xl" ref={containerRef}>
+    <div className="flex h-[82vh] w-full max-w-[92rem] mx-auto bg-white dark:bg-[#0f172a]/20 border border-slate-200 dark:border-slate-800/80 rounded-xl overflow-hidden relative shadow-2xl" ref={containerRef}>
 
 
       {/* Extreme Right Side Panel Trigger */}
       {!showAttackPaths && (
         <button
           onClick={() => setShowAttackPaths(true)}
-          className="absolute top-4 right-4 z-10 px-4 py-2 border rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700"
+          className="absolute top-4 right-4 z-10 px-4 py-2 border rounded-lg text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
         >
           <Zap size={14} className="text-amber-600 dark:text-amber-400" />
           Check Attack Paths
@@ -332,7 +334,7 @@ export default function KnowledgeGraph() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute right-0 top-0 bottom-0 w-96 bg-slate-950/95 backdrop-blur-md border-l border-slate-200 dark:border-slate-800 shadow-2xl z-30 flex flex-col overflow-hidden"
+            className="absolute right-0 top-0 bottom-0 w-96 bg-white dark:bg-slate-950/95 backdrop-blur-md border-l border-slate-200 dark:border-slate-800 shadow-2xl z-30 flex flex-col overflow-hidden"
           >
             <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/60">
               <div className="flex items-center gap-2">
@@ -343,7 +345,7 @@ export default function KnowledgeGraph() {
               </div>
               <button
                 onClick={() => setShowAttackPaths(false)}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded transition-all text-slate-500 dark:text-slate-600 dark:text-slate-400 hover:text-slate-200"
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               >
                 <X size={16} />
               </button>
@@ -367,7 +369,7 @@ export default function KnowledgeGraph() {
                   
                   {attackPathData && (
                     <div className="mt-4 flex flex-col gap-3">
-                      <div className="bg-slate-900/40 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <div className="bg-slate-50 dark:bg-slate-900/40 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
                          <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-500 font-semibold block mb-2">Path Overview</span>
                          <div className="text-sm text-slate-700 dark:text-slate-300 font-mono">
                            Hops: {attackPathData.hop_count}
@@ -377,7 +379,7 @@ export default function KnowledgeGraph() {
                          </div>
                       </div>
                       
-                      <div className="bg-slate-900/40 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <div className="bg-slate-50 dark:bg-slate-900/40 p-3.5 rounded-lg border border-slate-200 dark:border-slate-800">
                         <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-500 font-semibold block mb-2">Target Node</span>
                         <div className="text-sm text-slate-700 dark:text-slate-300 break-all">
                            {attackPathData.target_node}
@@ -427,13 +429,14 @@ export default function KnowledgeGraph() {
       {loading ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-3">
           <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-xs text-slate-500 dark:text-slate-600 dark:text-slate-400 tracking-widest font-mono uppercase animate-pulse">Synchronizing graph clusters from Neo4j...</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 tracking-widest font-mono uppercase animate-pulse">Synchronizing graph clusters from Neo4j...</span>
         </div>
       ) : (
-        <div className="flex-1 relative bg-[#020617]/50 h-full">
+        <div className="flex-1 relative bg-slate-100 dark:bg-[#020617]/50 h-full">
           <ForceGraph2D
             ref={fgRef}
             graphData={graphData}
+            backgroundColor={isDark ? 'rgba(2,6,23,0.5)' : '#f1f5f9'}
             width={dimensions.width}
             height={dimensions.height}
             nodeColor={getNodeColor}
@@ -501,13 +504,13 @@ export default function KnowledgeGraph() {
               const isAttackPath = showAttackPaths && attackPathLinks.has(`${srcId}->${tgtId}`);
 
               if (showAttackPaths) {
-                return isAttackPath ? '#fbbf24' : 'rgba(148, 163, 184, 0.2)';
+                return isAttackPath ? '#fbbf24' : (isDark ? 'rgba(148, 163, 184, 0.2)' : 'rgba(100, 116, 139, 0.25)');
               }
 
               if (hoveredNode) {
                 const isConnected = srcId === hoveredNode.id || tgtId === hoveredNode.id;
                 if (!isConnected) {
-                  return 'rgba(255, 255, 255, 0.05)';
+                  return isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)';
                 }
                 return getRelationshipColor(link.type);
               }
@@ -515,13 +518,16 @@ export default function KnowledgeGraph() {
               if (hoveredLink) {
                 const isCurrentLink = link === hoveredLink;
                 if (!isCurrentLink) {
-                  return 'rgba(255, 255, 255, 0.05)';
+                  return isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.06)';
                 }
                 return getRelationshipColor(link.type);
               }
 
               const baseColor = getRelationshipColor(link.type);
-              return baseColor === '#64748b' ? 'rgba(148, 163, 184, 0.7)' : `${baseColor}dd`;
+              if (baseColor === '#64748b') {
+                return isDark ? 'rgba(148, 163, 184, 0.7)' : 'rgba(100, 116, 139, 0.5)';
+              }
+              return `${baseColor}${isDark ? 'dd' : 'aa'}`;
             }}
             linkWidth={link => {
               const srcId = typeof link.source === 'object' ? link.source.id : link.source;
@@ -618,8 +624,10 @@ export default function KnowledgeGraph() {
                 ctx.quadraticCurveTo(rectX, rectY, rectX + radius, rectY);
                 ctx.closePath();
 
-                // Dark background card
-                ctx.fillStyle = `rgba(15, 23, 42, ${opacity * 0.95})`;
+                // Label background card — dark in dark mode, white in light mode
+                ctx.fillStyle = isDark
+                  ? `rgba(15, 23, 42, ${opacity * 0.95})`
+                  : `rgba(255, 255, 255, ${opacity * 0.92})`;
                 ctx.fill();
 
                 // Border glow on label
@@ -627,7 +635,9 @@ export default function KnowledgeGraph() {
                   ? `rgba(34, 211, 238, ${opacity * 0.8})`
                   : (selectedNode && node.id === selectedNode.id)
                     ? `rgba(59, 130, 246, ${opacity * 0.8})`
-                    : `rgba(51, 65, 85, ${opacity * 0.45})`;
+                    : isDark
+                      ? `rgba(51, 65, 85, ${opacity * 0.45})`
+                      : `rgba(203, 213, 225, ${opacity * 0.7})`;
                 ctx.lineWidth = isHovered || (selectedNode && node.id === selectedNode.id) ? 1.5 / globalScale : 1.0 / globalScale;
                 ctx.stroke();
 
@@ -636,11 +646,11 @@ export default function KnowledgeGraph() {
 
                 // Color code text font inside label
                 if (attackPathNodes.has(node.id)) {
-                  ctx.fillStyle = hexToRgba('#fbbf24', opacity);
+                  ctx.fillStyle = hexToRgba('#f59e0b', opacity);
                 } else if (node.label === 'Vulnerability' || node.label === 'CVE') {
-                  ctx.fillStyle = hexToRgba('#fca5a5', opacity);
+                  ctx.fillStyle = isDark ? hexToRgba('#fca5a5', opacity) : hexToRgba('#dc2626', opacity);
                 } else {
-                  ctx.fillStyle = hexToRgba('#e2e8f0', opacity);
+                  ctx.fillStyle = isDark ? hexToRgba('#e2e8f0', opacity) : hexToRgba('#1e293b', opacity);
                 }
 
                 ctx.fillText(label, node.x, rectY + rectH / 2);
@@ -658,7 +668,7 @@ export default function KnowledgeGraph() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="absolute right-0 top-0 bottom-0 w-96 bg-slate-950/95 backdrop-blur-md border-l border-slate-200 dark:border-slate-800 shadow-2xl z-20 flex flex-col overflow-hidden"
+            className="absolute right-0 top-0 bottom-0 w-96 bg-white dark:bg-slate-950/95 backdrop-blur-md border-l border-slate-200 dark:border-slate-800 shadow-2xl z-20 flex flex-col overflow-hidden"
           >
             {/* Drawer Header */}
             <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/60">
@@ -666,13 +676,13 @@ export default function KnowledgeGraph() {
                 <div className={`w-3 h-3 rounded-full ${selectedNode.label === 'Asset' ? 'bg-blue-500' :
                   selectedNode.label === 'Vulnerability' || selectedNode.label === 'CVE' ? 'bg-red-500' : 'bg-indigo-400'
                   }`}></div>
-                <span className="text-xs font-mono font-bold tracking-widest uppercase text-slate-500 dark:text-slate-600 dark:text-slate-400">
+                <span className="text-xs font-mono font-bold tracking-widest uppercase text-slate-500 dark:text-slate-400">
                   {selectedNode.label} Profile
                 </span>
               </div>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded transition-all text-slate-500 dark:text-slate-600 dark:text-slate-400 hover:text-slate-200"
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
               >
                 <X size={16} />
               </button>
@@ -681,7 +691,7 @@ export default function KnowledgeGraph() {
             {/* Drawer Body Content */}
             <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
               <div>
-                <h3 className="text-xl font-bold text-white tracking-tight leading-snug">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight leading-snug">
                   {selectedNode.properties?.name || selectedNode.name || selectedNode.id}
                 </h3>
                 <span className="text-xs font-mono text-slate-500 dark:text-slate-500 mt-1 block">ID: {selectedNode.id}</span>
@@ -690,7 +700,7 @@ export default function KnowledgeGraph() {
               {/* Conditional Rendering by Node Label */}
               {selectedNode.label === 'Asset' && (
                 <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-2 gap-3.5 bg-slate-900/40 p-3.5 rounded-lg border border-slate-900">
+                  <div className="grid grid-cols-2 gap-3.5 bg-slate-50 dark:bg-slate-900/40 p-3.5 rounded-lg border border-slate-200 dark:border-slate-900">
                     <div>
                       <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-500 font-semibold block">Criticality</span>
                       <span className="text-base font-extrabold text-cyan-600 dark:text-cyan-400 font-mono">
@@ -703,7 +713,7 @@ export default function KnowledgeGraph() {
                         {selectedNode.properties?.exposure || 'Internal'}
                       </span>
                     </div>
-                    <div className="col-span-2 pt-2.5 border-t border-slate-800/40">
+                    <div className="col-span-2 pt-2.5 border-t border-slate-200 dark:border-slate-800/40">
                       <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-500 font-semibold block">Role Type</span>
                       <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 capitalize">
                         {selectedNode.properties?.type || 'Host'}
@@ -712,8 +722,8 @@ export default function KnowledgeGraph() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-600 dark:text-slate-400 uppercase tracking-widest">Network Placement</span>
-                    <div className="text-sm text-slate-500 dark:text-slate-600 dark:text-slate-400 flex flex-col gap-2 font-mono bg-slate-900/20 p-3.5 rounded border border-slate-900">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Network Placement</span>
+                    <div className="text-sm text-slate-500 dark:text-slate-400 flex flex-col gap-2 font-mono bg-slate-50 dark:bg-slate-900/20 p-3.5 rounded border border-slate-200 dark:border-slate-900">
                       <div>Environment: <span className="text-slate-800 dark:text-slate-200">{selectedNode.properties?.environment || 'Production'}</span></div>
                       <div>System Owner: <span className="text-slate-800 dark:text-slate-200">{selectedNode.properties?.owner || 'SOC Ops Team'}</span></div>
                     </div>
@@ -723,7 +733,7 @@ export default function KnowledgeGraph() {
 
               {(selectedNode.label === 'Vulnerability' || selectedNode.label === 'CVE') && (
                 <div className="flex flex-col gap-4">
-                  <div className="grid grid-cols-2 gap-3 bg-slate-900/40 p-3.5 rounded-lg border border-slate-900">
+                  <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-900/40 p-3.5 rounded-lg border border-slate-200 dark:border-slate-900">
                     <div>
                       <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-500 font-semibold block">CVSS Score</span>
                       <span className="text-base font-extrabold text-red-600 dark:text-red-400 font-mono">
@@ -732,13 +742,13 @@ export default function KnowledgeGraph() {
                     </div>
                     <div>
                       <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-500 font-semibold block">EPSS Probability</span>
-                      <span className="text-base font-extrabold text-amber-500 font-mono">
+                      <span className="text-base font-extrabold text-amber-600 dark:text-amber-400 font-mono">
                         {selectedNode.properties?.epssScore ? `${(selectedNode.properties.epssScore * 100).toFixed(2)}%` : 'N/A'}
                       </span>
                     </div>
-                    <div className="col-span-2 pt-2.5 border-t border-slate-800/40">
+                    <div className="col-span-2 pt-2.5 border-t border-slate-200 dark:border-slate-800/40">
                       <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-500 font-semibold block">KEV Active Exploit</span>
-                      <span className={`text-sm font-bold font-mono ${selectedNode.properties?.isKEV || selectedNode.properties?.is_kev ? 'text-red-500 animate-pulse' : 'text-slate-500 dark:text-slate-600 dark:text-slate-400'
+                      <span className={`text-sm font-bold font-mono ${selectedNode.properties?.isKEV || selectedNode.properties?.is_kev ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-slate-500 dark:text-slate-400'
                         }`}>
                         {selectedNode.properties?.isKEV || selectedNode.properties?.is_kev ? '⚠️ KNOWN EXPLOITED' : 'None Mapped'}
                       </span>
@@ -746,8 +756,8 @@ export default function KnowledgeGraph() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-600 dark:text-slate-400 uppercase tracking-widest">Vulnerability Abstract</span>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-900/20 p-3.5 rounded border border-slate-900 font-serif">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Vulnerability Abstract</span>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900/20 p-3.5 rounded border border-slate-200 dark:border-slate-900 font-serif">
                       {selectedNode.properties?.description || 'No description summary available.'}
                     </p>
                   </div>
@@ -756,16 +766,16 @@ export default function KnowledgeGraph() {
 
               {selectedNode.label === 'Technique' && (
                 <div className="flex flex-col gap-4">
-                  <div className="bg-slate-900/40 p-3.5 rounded-lg border border-slate-900 flex flex-col gap-1.5">
+                  <div className="bg-slate-50 dark:bg-slate-900/40 p-3.5 rounded-lg border border-slate-200 dark:border-slate-900 flex flex-col gap-1.5">
                     <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-500 font-semibold">Tactic Classification</span>
-                    <span className="text-sm font-bold text-indigo-400 capitalize">
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400 capitalize">
                       {selectedNode.properties?.tactic || 'Execution'}
                     </span>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-600 dark:text-slate-400 uppercase tracking-widest">MITRE Description</span>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-900/20 p-3.5 rounded border border-slate-900">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">MITRE Description</span>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900/20 p-3.5 rounded border border-slate-200 dark:border-slate-900">
                       {selectedNode.properties?.description || 'No details available.'}
                     </p>
                   </div>
@@ -774,16 +784,16 @@ export default function KnowledgeGraph() {
 
               {selectedNode.label === 'ThreatActor' && (
                 <div className="flex flex-col gap-4">
-                  <div className="bg-slate-900/40 p-3.5 rounded-lg border border-slate-900 flex flex-col gap-1.5">
+                  <div className="bg-slate-50 dark:bg-slate-900/40 p-3.5 rounded-lg border border-slate-200 dark:border-slate-900 flex flex-col gap-1.5">
                     <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-500 font-semibold font-mono">Origin Segment</span>
-                    <span className="text-sm font-bold text-orange-400 font-mono">
+                    <span className="text-sm font-bold text-orange-600 dark:text-orange-400 font-mono">
                       {selectedNode.properties?.origin || 'Unknown'}
                     </span>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-600 dark:text-slate-400 uppercase tracking-widest">Actor Dossier</span>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-900/20 p-3.5 rounded border border-slate-900 font-mono">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Actor Dossier</span>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-900/20 p-3.5 rounded border border-slate-200 dark:border-slate-900 font-mono">
                       {selectedNode.properties?.description || 'No threat intelligence profile has been generated.'}
                     </p>
                   </div>
@@ -792,10 +802,10 @@ export default function KnowledgeGraph() {
             </div>
 
             {/* Drawer Footer Actions */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-900/40 flex flex-col">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 flex flex-col">
               <button
                 onClick={() => setSelectedNode(null)}
-                className="py-3 bg-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all"
+                className="py-3 bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all"
               >
                 Close Drawer
               </button>

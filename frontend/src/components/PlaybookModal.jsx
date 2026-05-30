@@ -44,7 +44,7 @@ const SECTIONS = [
     key: 'verificationSteps',
     label: 'Verification Steps',
     icon: CheckCircle,
-    color: 'text-emerald-400',
+    color: 'text-emerald-600 dark:text-emerald-400',
     borderColor: 'border-emerald-500/30',
     bgColor: 'bg-emerald-500/5',
   },
@@ -52,7 +52,7 @@ const SECTIONS = [
     key: 'rollbackPlan',
     label: 'Rollback Plan',
     icon: RefreshCw,
-    color: 'text-purple-400',
+    color: 'text-purple-600 dark:text-purple-400',
     borderColor: 'border-purple-500/30',
     bgColor: 'bg-purple-500/5',
   },
@@ -88,7 +88,7 @@ function AccordionSection({ section, content, defaultOpen = false }) {
           <span className={`font-bold text-[15px] ${section.color}`}>{section.label}</span>
         </div>
         <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown size={18} className="text-slate-500 dark:text-slate-600 dark:text-slate-400" />
+          <ChevronDown size={18} className="text-slate-500 dark:text-slate-400" />
         </motion.div>
       </button>
 
@@ -546,7 +546,7 @@ export default function PlaybookModal({ alert, onClose }) {
                   <span role="img" aria-label="shield">🛡️</span> AI-Generated Remediation Playbook
                 </h2>
               </div>
-              <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-mono text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-1 pl-1">
+              <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-mono text-slate-500 dark:text-slate-400 mt-1 pl-1">
                 <span>
                   Incident:{' '}
                   <span className="text-slate-800 dark:text-slate-200 font-semibold">
@@ -573,7 +573,7 @@ export default function PlaybookModal({ alert, onClose }) {
                 console.log("[PlaybookModal] Closing modal via explicit Close icon click...");
                 onClose();
               }}
-              className="shrink-0 p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-300 dark:border-slate-700/50 text-slate-500 dark:text-slate-600 dark:text-slate-400 hover:text-slate-200 transition-all duration-150 cursor-pointer"
+              className="shrink-0 p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-300 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-200 transition-all duration-150 cursor-pointer"
             >
               <X size={20} />
             </button>
@@ -657,7 +657,7 @@ export default function PlaybookModal({ alert, onClose }) {
                       <h3 className="text-lg font-bold text-white tracking-wide">
                         AI Governance & Human Validation
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-0.5 font-sans">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-sans">
                         Critical banking infrastructure actions require analyst approval before execution.
                       </p>
                     </div>
@@ -726,7 +726,7 @@ export default function PlaybookModal({ alert, onClose }) {
                             <span>Eligible for autonomous remediation. Human analyst can bypass full validation cycle.</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2.5 p-3 bg-slate-800/40 border border-slate-300 dark:border-slate-700/30 text-slate-350 rounded-lg text-xs font-mono">
+                          <div className="flex items-center gap-2.5 p-3 bg-slate-800/40 border border-slate-300 dark:border-slate-700/30 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-mono">
                             <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
                             <span>Standard manual analyst governance validation required.</span>
                           </div>
@@ -742,7 +742,7 @@ export default function PlaybookModal({ alert, onClose }) {
                               <h4 className="text-sm font-black text-amber-300 uppercase tracking-widest font-mono">
                                 ⚠ HUMAN APPROVAL REQUIRED
                               </h4>
-                              <p className="text-xs text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-0.5 font-sans">
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-sans">
                                 AI-generated remediation affects critical infrastructure.
                               </p>
                             </div>
@@ -803,7 +803,7 @@ export default function PlaybookModal({ alert, onClose }) {
                             </h4>
                             <span className="text-[10px] text-slate-500 dark:text-slate-500 font-mono">SESSION_ID: SOC-SECURE-{alert?.id}</span>
                           </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-1 font-sans">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
                             Human approval logged. AI containment steps deployed in real-time.
                           </p>
 
@@ -830,7 +830,7 @@ export default function PlaybookModal({ alert, onClose }) {
                             {executionLogs?.map?.((log, index) => {
                               const isSuccess = log?.startsWith?.('✓');
                               const isExec = log?.startsWith?.('[EXEC]');
-                              let styleClass = 'text-slate-350';
+                              let styleClass = 'text-slate-600 dark:text-slate-300';
                               if (isSuccess) styleClass = 'text-emerald-400 font-bold';
                               else if (isExec) styleClass = 'text-cyan-600 dark:text-cyan-400';
                               return (
@@ -885,7 +885,7 @@ export default function PlaybookModal({ alert, onClose }) {
                             </h4>
                             <span className="text-[10px] text-slate-500 dark:text-slate-500 font-mono">TICKET_ID: {escalationTicket?.ticketId || 'SOC-2026-1043'}</span>
                           </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-1 font-sans">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
                             AI containment bypassed. Critical threat transferred to Tier-3 incident response.
                           </p>
 
@@ -913,7 +913,7 @@ export default function PlaybookModal({ alert, onClose }) {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-slate-500 dark:text-slate-500">Timestamp:</span>
-                              <span className="text-slate-450">{escalationTicket?.timestamp ? new Date(escalationTicket.timestamp).toLocaleString() : new Date().toLocaleString()}</span>
+                              <span className="text-slate-600 dark:text-slate-400">{escalationTicket?.timestamp ? new Date(escalationTicket.timestamp).toLocaleString() : new Date().toLocaleString()}</span>
                             </div>
                           </div>
 
@@ -953,7 +953,7 @@ export default function PlaybookModal({ alert, onClose }) {
                             </h4>
                             <span className="text-[10px] text-slate-500 dark:text-slate-500 font-mono">AUDIT_LOG: DISMISSED</span>
                           </div>
-                          <p className="text-xs text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-1 font-sans">
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-sans">
                             Operator has declined the recommendation. AI automated actions halted.
                           </p>
 
@@ -963,7 +963,7 @@ export default function PlaybookModal({ alert, onClose }) {
                               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
                               WARNING: THREAT REMAINS ACTIVE
                             </div>
-                            <p className="text-slate-500 dark:text-slate-600 dark:text-slate-400 leading-relaxed text-[11px] font-sans">
+                            <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px] font-sans">
                               Target asset <span className="text-cyan-600 dark:text-cyan-400 font-bold">{alert?.asset_id || 'Unknown Asset'}</span> remains in a high-vulnerability exposure state. Manual investigation and physical containment are critically required to prevent lateral movement.
                             </p>
                           </div>
@@ -992,8 +992,8 @@ export default function PlaybookModal({ alert, onClose }) {
                     </div>
                     <div className="p-4 max-h-[160px] overflow-y-auto font-mono text-[11px] leading-relaxed flex flex-col gap-2.5 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-800">
                       {auditLogs?.map?.((log, index) => {
-                        let logColor = 'text-slate-500 dark:text-slate-600 dark:text-slate-400';
-                        let badgeBg = 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-600 dark:text-slate-400';
+                        let logColor = 'text-slate-500 dark:text-slate-400';
+                        let badgeBg = 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
                         if (log?.status === 'SUCCESS' || log?.status === 'APPROVED') {
                           logColor = 'text-emerald-300';
                           badgeBg = 'bg-emerald-500/10 text-emerald-400';

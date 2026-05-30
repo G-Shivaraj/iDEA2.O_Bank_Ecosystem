@@ -3,13 +3,23 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Light theme (default) — soft pastel professional backdrop ── */
   body {
+    background-color: #eef2f8;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+    background-attachment: fixed;
+    color: #1e293b;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* ── Dark theme — original space-dark backdrop ── */
+  html.dark body {
     background-color: #030712;
-    /* Space dark background */
     background-image:
       radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
       radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.1) 0px, transparent 50%);
-    background-attachment: fixed;
     color: #e2e8f0;
   }
 }
@@ -21,43 +31,69 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(148, 163, 184, 0.15);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(6, 182, 212, 0.3);
+  background: rgba(8, 145, 178, 0.35);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: rgba(8, 145, 178, 0.6);
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.3);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(6, 182, 212, 0.6);
 }
 
-/* Glassmorphism styling blocks */
-.glass-panel {
-  background: rgba(17, 24, 39, 0.7);
+/* Glassmorphism styling blocks — light default, dark override */
+.glass-panel,
+.glass-panel-interactive {
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(55, 65, 81, 0.4);
+  border: 1px solid rgba(203, 213, 225, 0.6);
 }
 
 .glass-panel-interactive {
-  background: rgba(17, 24, 39, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(55, 65, 81, 0.4);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-panel-interactive:hover {
-  border-color: rgba(6, 182, 212, 0.6);
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+  border-color: rgba(8, 145, 178, 0.5);
+  box-shadow: 0 4px 20px rgba(8, 145, 178, 0.12);
   transform: translateY(-2px);
 }
 
-/* Pulsing grid grid overlay for tech look */
+html.dark .glass-panel,
+html.dark .glass-panel-interactive {
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(55, 65, 81, 0.4);
+}
+
+html.dark .glass-panel-interactive:hover {
+  border-color: rgba(6, 182, 212, 0.6);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+}
+
+/* Pulsing grid overlay for tech look */
 .cyber-grid {
   background-size: 40px 40px;
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+}
+
+html.dark .cyber-grid {
   background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);

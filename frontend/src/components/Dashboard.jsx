@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../hooks/useTheme';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, PieChart, Pie } from 'recharts';
 import {
   ShieldAlert, Target, Network, AlertOctagon, LayoutDashboard, Clock,
@@ -31,7 +32,7 @@ const SEVERITY_CONFIG = {
     leftBar: 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.6)]',
     dot: 'bg-red-500',
     barFill: '#ef4444',
-    badge: 'bg-red-100 dark:bg-red-500/20 border border-red-500/50 text-red-300',
+    badge: 'bg-red-100 dark:bg-red-500/20 border border-red-500/50 text-red-700 dark:text-red-300',
     pingSvg: true,
   },
   HIGH: {
@@ -43,7 +44,7 @@ const SEVERITY_CONFIG = {
     leftBar: 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.5)]',
     dot: 'bg-amber-500',
     barFill: '#f59e0b',
-    badge: 'bg-amber-100 dark:bg-amber-500/20 border border-amber-500/50 text-amber-300',
+    badge: 'bg-amber-100 dark:bg-amber-500/20 border border-amber-500/50 text-amber-700 dark:text-amber-300',
     pingSvg: false,
   },
   MEDIUM: {
@@ -55,19 +56,19 @@ const SEVERITY_CONFIG = {
     leftBar: 'bg-blue-500',
     dot: 'bg-blue-500',
     barFill: '#3b82f6',
-    badge: 'bg-blue-100 dark:bg-blue-500/20 border border-blue-500/50 text-blue-300',
+    badge: 'bg-blue-100 dark:bg-blue-500/20 border border-blue-500/50 text-blue-700 dark:text-blue-300',
     pingSvg: false,
   },
   LOW: {
     label: 'LOW',
     bg: 'bg-slate-50 dark:bg-slate-500/10',
     border: 'border-slate-300 dark:border-slate-600/30',
-    text: 'text-slate-500 dark:text-slate-600 dark:text-slate-400',
+    text: 'text-slate-500 dark:text-slate-400',
     glow: '',
     leftBar: 'bg-slate-600',
     dot: 'bg-slate-500',
     barFill: '#64748b',
-    badge: 'bg-slate-100 dark:bg-slate-600/20 border border-slate-600/50 text-slate-500 dark:text-slate-600 dark:text-slate-400',
+    badge: 'bg-slate-100 dark:bg-slate-600/20 border border-slate-600/50 text-slate-500 dark:text-slate-400',
     pingSvg: false,
   },
 };
@@ -176,6 +177,7 @@ function parseAiAnalysis(text) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { isDark } = useTheme();
   const [stats, setStats] = useState({
     totalCves: 0,
     criticalAlerts: 0,
@@ -496,7 +498,7 @@ export default function Dashboard() {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-slate-500 dark:text-slate-600 dark:text-slate-400 text-xs font-bold tracking-widest uppercase mb-2">{title}</p>
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold tracking-widest uppercase mb-2">{title}</p>
             <h3 className="text-5xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{value}</h3>
           </div>
           <div className="flex items-center gap-3">
@@ -505,7 +507,7 @@ export default function Dashboard() {
             </div>
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-lg text-slate-500 dark:text-slate-600 dark:text-slate-400 hover:text-white transition-all duration-200 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-center shrink-0 self-center"
+              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-center shrink-0 self-center"
               title={isExpanded ? "Hide Details" : "Show Details"}
             >
               <ChevronDown
@@ -560,7 +562,7 @@ export default function Dashboard() {
           ${isSelected
             ? `${sev.bg} ${sev.border} ${sev.glow} ring-1 ring-offset-0 ring-offset-transparent ${sev.border.replace('border-', 'ring-')}`
             : item.isAiCorrelated
-              ? 'bg-cyan-50 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-500/40 hover:border-cyan-400 hover:bg-cyan-955/40 shadow-[0_0_12px_rgba(6,182,212,0.15)]'
+              ? 'bg-cyan-50 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-500/40 hover:border-cyan-400 hover:bg-cyan-100 dark:hover:bg-cyan-900/40 shadow-[0_0_12px_rgba(6,182,212,0.15)]'
               : 'bg-white dark:bg-slate-950/70 border-slate-200 dark:border-slate-800/70 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/60'
           }`}
       >
@@ -596,7 +598,7 @@ export default function Dashboard() {
 
                 {/* KEV badge */}
                 {item.isKEV && (
-                  <span className="text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/30 px-2 py-0.5 rounded tracking-wide">
+                  <span className="text-[11px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 px-2 py-0.5 rounded tracking-wide">
                     🔴 KEV
                   </span>
                 )}
@@ -647,7 +649,7 @@ export default function Dashboard() {
 
             {/* Short description — always visible when collapsed */}
             {!isExpanded && item.description && (
-              <p className="text-[13px] text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-2 leading-relaxed line-clamp-2">
+              <p className="text-[13px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed line-clamp-2">
                 {item.description}
               </p>
             )}
@@ -702,9 +704,9 @@ export default function Dashboard() {
               {/* MITRE technique */}
               {(item.techniqueId || item.techniqueName) && (
                 <div className="flex items-center gap-2 text-xs font-mono">
-                  <Shield size={12} className="text-purple-400 shrink-0" />
-                  <span className="text-purple-400 font-bold">{item.techniqueId}</span>
-                  {item.techniqueName && <span className="text-slate-500 dark:text-slate-600 dark:text-slate-400">— {item.techniqueName}</span>}
+                  <Shield size={12} className="text-purple-600 dark:text-purple-400 shrink-0" />
+                  <span className="text-purple-600 dark:text-purple-400 font-bold">{item.techniqueId}</span>
+                  {item.techniqueName && <span className="text-slate-500 dark:text-slate-400">— {item.techniqueName}</span>}
                 </div>
               )}
 
@@ -715,9 +717,9 @@ export default function Dashboard() {
 
               {/* Timestamp */}
               {analysisTimestamp && (
-                <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 dark:text-slate-600 pt-1 border-t border-slate-800/40">
+                <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500 dark:text-slate-600 pt-1 border-t border-slate-200 dark:border-slate-800/40">
                   <Clock size={11} className="shrink-0" />
-                  <span>Recorded at: <span className="text-slate-500 dark:text-slate-600 dark:text-slate-400">{formatTimestamp(analysisTimestamp)}</span></span>
+                  <span>Recorded at: <span className="text-slate-500 dark:text-slate-400">{formatTimestamp(analysisTimestamp)}</span></span>
                 </div>
               )}
             </motion.div>
@@ -726,8 +728,8 @@ export default function Dashboard() {
           {/* Bottom compact row (when collapsed) */}
           {!isExpanded && (
             <div className="pl-4 pr-4 pb-3 flex items-center gap-4 text-[11px] font-mono text-slate-500 dark:text-slate-600">
-              {item.cvssScore != null && <span>CVSS <span className="text-slate-500 dark:text-slate-600 dark:text-slate-400 font-bold">{item.cvssScore.toFixed(1)}</span></span>}
-              {item.epssScore != null && <span>EPSS <span className="text-slate-500 dark:text-slate-600 dark:text-slate-400 font-bold">{(item.epssScore * 100).toFixed(1)}%</span></span>}
+              {item.cvssScore != null && <span>CVSS <span className="text-slate-500 dark:text-slate-400 font-bold">{item.cvssScore.toFixed(1)}</span></span>}
+              {item.epssScore != null && <span>EPSS <span className="text-slate-500 dark:text-slate-400 font-bold">{(item.epssScore * 100).toFixed(1)}%</span></span>}
               {item.techniqueId && <span className="text-purple-500">{item.techniqueId}</span>}
               {analysisTimestamp && (
                 <span className="ml-auto flex items-center gap-1 text-slate-700">
@@ -740,7 +742,7 @@ export default function Dashboard() {
         </div>
 
         {/* Playbook redirection button - Always visible at the bottom of the box */}
-        <div className="px-4 pb-3.5 pt-1 border-t border-slate-900 bg-slate-50 dark:bg-slate-950/20">
+        <div className="px-4 pb-3.5 pt-1 border-t border-slate-200 dark:border-slate-900 bg-slate-50 dark:bg-slate-950/20">
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -749,10 +751,10 @@ export default function Dashboard() {
             className={`w-full py-2 px-3 rounded-lg font-bold text-[11px] uppercase tracking-wider transition-all duration-200 border flex items-center justify-center gap-1.5
               ${isPriority
                 ? 'bg-cyan-100 dark:bg-cyan-500/10 hover:bg-cyan-200 dark:hover:bg-cyan-500/20 border-cyan-300 dark:border-cyan-500/35 hover:border-cyan-400 dark:hover:border-cyan-500/50 text-cyan-600 dark:text-cyan-400 hover:text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.06)]'
-                : 'bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-500 dark:text-slate-600 dark:text-slate-400 hover:text-slate-200'
+                : 'bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-200'
               }`}
           >
-            <BookOpen size={12} className={isPriority ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-500 dark:text-slate-600 dark:text-slate-400'} />
+            <BookOpen size={12} className={isPriority ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-500 dark:text-slate-400'} />
             {isPriority ? "Check the Remediation playbook" : "Generate the Remidiation playbook"}
           </button>
         </div>
@@ -764,7 +766,7 @@ export default function Dashboard() {
   const CustomYAxisTick = ({ x, y, payload }) => {
     const label = payload.value?.length > 16 ? payload.value.substring(0, 16) + '…' : payload.value;
     return (
-      <text x={x} y={y} dy={4} textAnchor="end" fill="#94a3b8" fontSize={11} fontFamily="monospace" fontWeight="bold">
+      <text x={x} y={y} dy={4} textAnchor="end" fill={isDark ? '#94a3b8' : '#64748b'} fontSize={11} fontFamily="monospace" fontWeight="bold">
         {label}
       </text>
     );
@@ -798,17 +800,17 @@ export default function Dashboard() {
     <div className="flex flex-col gap-8 w-full max-w-[96rem] mx-auto pb-14 px-4">
 
       {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="flex justify-between items-center border-b border-slate-800/80 pb-6">
+      <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800/80 pb-6">
         <div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
             <LayoutDashboard className="text-blue-500" size={30} />
             SOC Command Center
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-1">Real-time vulnerability mapping, risk prioritisation &amp; AI threat intelligence</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Real-time vulnerability mapping, risk prioritisation &amp; AI threat intelligence</p>
         </div>
         <button
           onClick={fetchData}
-          className="px-5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-500 dark:text-slate-600 dark:text-slate-400 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
+          className="px-5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-500 dark:text-slate-400 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200"
         >
           <Clock size={15} />
           Refresh
@@ -818,23 +820,23 @@ export default function Dashboard() {
       {isLoading ? (
         <div className="h-[60vh] flex flex-col items-center justify-center gap-3">
           <div className="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full" />
-          <span className="text-sm text-slate-500 dark:text-slate-600 dark:text-slate-400 tracking-widest font-mono uppercase animate-pulse">Syncing SOC telemetry...</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400 tracking-widest font-mono uppercase animate-pulse">Syncing SOC telemetry...</span>
         </div>
       ) : (
         <>
           {/* ── Stat Cards ─────────────────────────────────────────────── */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            <StatCard title="Total CVEs Mapped" value={stats.totalCves} icon={ShieldAlert} colorClass="bg-red-500/10 text-red-500 border border-red-500/20" delay={0.05}>
-              <div className="flex flex-col gap-4 mt-5 pt-4 border-t border-slate-800/80 flex-1">
+            <StatCard title="Total CVEs Mapped" value={stats.totalCves} icon={ShieldAlert} colorClass="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-500 border border-red-200 dark:border-red-500/20" delay={0.05}>
+              <div className="flex flex-col gap-4 mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80 flex-1">
                 {/* Severity Donut & Legend */}
                 <div className="flex items-center justify-between gap-4 h-24">
                   <div className="flex-1 flex flex-col justify-center text-xs font-mono text-slate-700 dark:text-slate-300 gap-2">
-                    <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />Critical: <span className="text-rose-400 font-bold">{stats.severityBreakdown.CRITICAL || 5}</span></div>
+                    <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />Critical: <span className="text-rose-600 dark:text-rose-400 font-bold">{stats.severityBreakdown.CRITICAL || 5}</span></div>
                     <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" />High: <span className="text-amber-600 dark:text-amber-400 font-bold">{stats.severityBreakdown.HIGH || 6}</span></div>
                   </div>
                   <div className="flex-1 flex flex-col justify-center text-xs font-mono text-slate-700 dark:text-slate-300 gap-2">
                     <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-blue-500" />Medium: <span className="text-blue-600 dark:text-blue-400 font-bold">{stats.severityBreakdown.MEDIUM || 1}</span></div>
-                    <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-slate-500" />Low: <span className="text-slate-500 dark:text-slate-600 dark:text-slate-400 font-bold">{stats.severityBreakdown.LOW || 0}</span></div>
+                    <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-slate-500" />Low: <span className="text-slate-500 dark:text-slate-400 font-bold">{stats.severityBreakdown.LOW || 0}</span></div>
                   </div>
                   <div className="w-20 h-20 shrink-0 flex items-center justify-center relative">
                     <ResponsiveContainer width="100%" height="100%">
@@ -868,14 +870,14 @@ export default function Dashboard() {
                 {/* Compact tags list of actual CVEs */}
                 <div className="flex flex-col gap-1.5 mt-1">
                   <p className="text-[10px] text-slate-500 dark:text-slate-500 font-mono uppercase tracking-wider font-bold">Mapped CVE Registry:</p>
-                  <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-800/80 pr-1 pr-1">
+                  <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 pr-1 pr-1">
                     {uniqueCvesList.map(cveId => {
                       const risk = topRisks.find(r => r.cveId === cveId);
                       const sev = risk?.severity || 'HIGH';
                       const color = sev === 'CRITICAL' ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20 shadow-[0_0_8px_rgba(239,68,68,0.05)]' :
                         sev === 'HIGH' ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.05)]' :
                           sev === 'MEDIUM' ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20' :
-                            'bg-slate-50 dark:bg-slate-500/10 text-slate-500 dark:text-slate-600 dark:text-slate-400 border-slate-500/20 hover:bg-slate-500/20';
+                            'bg-slate-50 dark:bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20 hover:bg-slate-500/20';
                       return (
                         <span
                           key={cveId}
@@ -899,17 +901,17 @@ export default function Dashboard() {
               </div>
             </StatCard>
 
-            <StatCard title="Critical Unresolved" value={stats.criticalAlerts} icon={AlertOctagon} colorClass="bg-rose-500/10 text-rose-400 border border-rose-500/20" delay={0.1}>
-              <div className="flex flex-col gap-3 mt-5 pt-4 border-t border-slate-800/80 flex-1">
+            <StatCard title="Critical Unresolved" value={stats.criticalAlerts} icon={AlertOctagon} colorClass="bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20" delay={0.1}>
+              <div className="flex flex-col gap-3 mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80 flex-1">
                 <p className="text-[10px] text-slate-500 dark:text-slate-500 font-mono uppercase tracking-wider font-bold mb-1">Active Security Threats:</p>
                 {unresolvedCriticalAlerts.length > 0 ? (
-                  <div className="flex flex-col gap-2.5 max-h-[180px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-800/80 pr-1">
+                  <div className="flex flex-col gap-2.5 max-h-[180px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 pr-1">
                     {unresolvedCriticalAlerts.map(alert => (
                       <div key={alert.id} className="flex flex-col gap-1.5 bg-red-500/5 border border-red-500/20 rounded-xl p-3.5 relative overflow-hidden hover:bg-red-500/10 transition-colors">
                         <div className="absolute top-0 left-0 bottom-0 w-1 bg-red-500 animate-pulse" />
                         <div className="flex items-center justify-between text-[11px] font-mono pl-1">
                           <span className="font-extrabold text-red-600 dark:text-red-400">{alert.cve_id || alert.cveId || 'CVE-UNKNOWN'}</span>
-                          <span className="text-[9px] bg-red-100 dark:bg-red-500/20 text-red-300 px-2 py-0.5 rounded uppercase font-black tracking-widest animate-pulse">UNRESOLVED</span>
+                          <span className="text-[9px] bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 px-2 py-0.5 rounded uppercase font-black tracking-widest animate-pulse">UNRESOLVED</span>
                         </div>
                         <p className="text-[11px] text-slate-800 dark:text-slate-200 leading-normal pl-1 font-semibold" title={alert.message}>
                           {alert.message}
@@ -922,19 +924,19 @@ export default function Dashboard() {
                     <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                       <div className="w-4 h-4 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
-                    <span className="text-xs text-emerald-400 font-mono font-bold uppercase tracking-widest">All Threats Resolved</span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold uppercase tracking-widest">All Threats Resolved</span>
                   </div>
                 )}
               </div>
             </StatCard>
 
             <StatCard title="Critical Assets at Risk" value={stats.assetsAtRisk} icon={Target} colorClass="bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" delay={0.15}>
-              <div className="flex flex-col gap-3 mt-5 pt-4 border-t border-slate-800/80 flex-1">
+              <div className="flex flex-col gap-3 mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80 flex-1">
                 <p className="text-[10px] text-slate-500 dark:text-slate-500 font-mono uppercase tracking-wider font-bold mb-1">Impacted Host Systems:</p>
                 {criticalAssets.length > 0 ? (
-                  <div className="flex flex-col gap-2 max-h-[180px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-800/80 pr-1">
+                  <div className="flex flex-col gap-2 max-h-[180px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 pr-1">
                     {criticalAssets.map(asset => (
-                      <div key={asset.name} className="flex items-center justify-between text-xs font-mono bg-slate-50 dark:bg-slate-900/60 border border-slate-850 rounded-xl px-3.5 py-2.5 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-900 transition-all duration-200">
+                      <div key={asset.name} className="flex items-center justify-between text-xs font-mono bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2.5 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-200">
                         <div className="flex items-center gap-2 truncate">
                           <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
                           <span className="text-slate-900 dark:text-slate-100 font-black truncate max-w-[150px]" title={asset.name}>
@@ -942,7 +944,7 @@ export default function Dashboard() {
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-slate-500 dark:text-slate-600 dark:text-slate-400 text-[10px] uppercase font-bold">Crit: <span className="text-cyan-600 dark:text-cyan-400">{asset.criticality}/10</span></span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold">Crit: <span className="text-cyan-600 dark:text-cyan-400">{asset.criticality}/10</span></span>
                           <span className="bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 px-2 py-0.5 rounded text-[10px] font-black uppercase">
                             {asset.vulnerabilityCount} Vulns
                           </span>
@@ -956,18 +958,18 @@ export default function Dashboard() {
               </div>
             </StatCard>
 
-            <StatCard title="Attack Paths Found" value={stats.attackPaths} icon={Network} colorClass="bg-purple-500/10 text-purple-400 border border-purple-500/20" delay={0.2}>
-              <div className="flex flex-col gap-3 mt-5 pt-4 border-t border-slate-800/80 flex-1">
+            <StatCard title="Attack Paths Found" value={stats.attackPaths} icon={Network} colorClass="bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20" delay={0.2}>
+              <div className="flex flex-col gap-3 mt-5 pt-4 border-t border-slate-200 dark:border-slate-800/80 flex-1">
                 <p className="text-[10px] text-slate-500 dark:text-slate-500 font-mono uppercase tracking-wider font-bold mb-1">Lateral Compromise Paths:</p>
                 {attackPaths.length > 0 ? (
-                  <div className="flex flex-col gap-3 max-h-[180px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-800/80 pr-1">
+                  <div className="flex flex-col gap-3 max-h-[180px] overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 pr-1">
                     {attackPaths.map((path, idx) => (
                       <div key={idx} className="flex flex-col gap-2.5 p-3.5 bg-purple-500/5 border border-purple-500/20 rounded-xl hover:bg-purple-500/10 transition-colors">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-purple-400 font-black">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-purple-600 dark:text-purple-400 font-black">
                           <span>PATH SCENARIO #{idx + 1} · {path.hop_count} HOPS</span>
                           <span>RISK: {path.total_risk_score?.toFixed(0)}/100</span>
                         </div>
-                        <div className="flex items-center gap-2 text-xs font-mono text-slate-800 dark:text-slate-200 font-bold overflow-x-auto whitespace-nowrap py-2.5 px-2 bg-slate-950 border border-slate-850 rounded-lg custom-scrollbar">
+                        <div className="flex items-center gap-2 text-xs font-mono text-slate-800 dark:text-slate-200 font-bold overflow-x-auto whitespace-nowrap py-2.5 px-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg custom-scrollbar">
                           {path.path_nodes?.map((node, nIdx) => (
                             <React.Fragment key={nIdx}>
                               {nIdx > 0 && <span className="text-purple-500 font-black px-0.5">→</span>}
@@ -981,7 +983,7 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2.5 text-emerald-400 text-xs font-mono font-bold py-3">
+                  <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 text-xs font-mono font-bold py-3">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                     <span>No lateral compromise paths detected.</span>
                   </div>
@@ -995,7 +997,7 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="relative bg-[#050d18] border border-cyan-900/40 rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(0,200,255,0.04)]"
+            className="relative bg-white dark:bg-[#050d18] border border-slate-200 dark:border-cyan-900/40 rounded-2xl overflow-hidden shadow-lg dark:shadow-[0_0_40px_rgba(0,200,255,0.04)]"
           >
             {/* Scanline overlay */}
             <div
@@ -1005,15 +1007,15 @@ export default function Dashboard() {
             <div className="absolute top-0 right-0 w-64 h-32 bg-gradient-to-bl from-cyan-500/5 to-transparent pointer-events-none" />
 
             {/* Header */}
-            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5 p-7 border-b border-cyan-900/30">
+            <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5 p-7 border-b border-slate-200 dark:border-cyan-900/30">
               <div>
-                <h3 className="text-xl font-extrabold text-white flex items-center gap-3 tracking-tight">
+                <h3 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3 tracking-tight">
                   <div className="p-2 rounded-xl bg-cyan-100 dark:bg-cyan-500/10 border border-cyan-200 dark:border-cyan-500/20 shadow-[0_0_12px_rgba(6,182,212,0.12)]">
                     <Cpu className="text-cyan-600 dark:text-cyan-400" size={20} />
                   </div>
                   <span role="img" aria-label="robot">🤖</span> Gen-AI Threat Intelligence Analysis
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-1.5 ml-1">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1.5 ml-1">
                   Gemini AI analyses your full CVE dataset, maps MITRE ATT&amp;CK techniques, and predicts the most likely kill chain
                 </p>
               </div>
@@ -1025,7 +1027,7 @@ export default function Dashboard() {
                 disabled={aiState === 'running'}
                 className={`shrink-0 flex items-center gap-3 px-7 py-4 rounded-xl font-extrabold text-[14px] uppercase tracking-wider transition-all duration-200 border
                   ${aiState === 'running'
-                    ? 'bg-cyan-950/40 border-cyan-800/40 text-cyan-600 cursor-not-allowed'
+                    ? 'bg-slate-100 border-slate-200 text-slate-400 dark:bg-cyan-950/40 dark:border-cyan-800/40 dark:text-cyan-600 cursor-not-allowed'
                     : 'bg-gradient-to-r from-cyan-600/25 to-blue-600/25 border-cyan-500/50 text-cyan-700 dark:text-cyan-300 hover:border-cyan-400 hover:text-cyan-200 hover:shadow-[0_0_25px_rgba(6,182,212,0.3)] shadow-[0_0_15px_rgba(6,182,212,0.12)]'
                   }`}
               >
@@ -1042,8 +1044,8 @@ export default function Dashboard() {
               {/* ── Idle state ─────────────────────────────────────────────── */}
               {aiState === 'idle' && (
                 <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-cyan-500/5 border border-cyan-500/15 flex items-center justify-center">
-                    <Cpu className="text-cyan-800" size={24} />
+                  <div className="w-14 h-14 rounded-2xl bg-cyan-50 dark:bg-cyan-500/5 border border-cyan-200 dark:border-cyan-500/15 flex items-center justify-center">
+                    <Cpu className="text-cyan-600 dark:text-cyan-400" size={24} />
                   </div>
                   <p className="text-slate-500 dark:text-slate-500 text-sm max-w-md font-mono">
                     Click <span className="text-cyan-500 font-bold">"Run AI Analysis"</span> to run the full 7-step threat intelligence pipeline:
@@ -1068,7 +1070,7 @@ export default function Dashboard() {
                       <div
                         key={step.id}
                         className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all duration-300
-                          ${isDone ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
+                          ${isDone ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400' :
                             isRunning ? 'bg-cyan-100 dark:bg-cyan-500/10 border-cyan-300 dark:border-cyan-500/40 text-cyan-600 dark:text-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.15)]' :
                             'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800/60 text-slate-500 dark:text-slate-600'
                           }`}
@@ -1077,7 +1079,7 @@ export default function Dashboard() {
                           {isRunning && (
                             <div className="absolute w-7 h-7 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" />
                           )}
-                          <span className={`text-[11px] font-black ${isDone ? 'text-emerald-400' : isRunning ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-500 dark:text-slate-600'}`}>
+                          <span className={`text-[11px] font-black ${isDone ? 'text-emerald-600 dark:text-emerald-400' : isRunning ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-500 dark:text-slate-600'}`}>
                             {isDone ? '✓' : step.id}
                           </span>
                         </div>
@@ -1092,7 +1094,7 @@ export default function Dashboard() {
               {aiState === 'running' && pipelineSteps.length > 0 && (() => {
                 const latest = [...pipelineSteps].reverse()[0];
                 return (
-                  <div className="bg-black/40 border border-cyan-900/40 rounded-xl px-4 py-3 font-mono text-xs text-cyan-600 dark:text-cyan-400 flex items-center gap-3">
+                  <div className="bg-slate-50 dark:bg-black/40 border border-cyan-200 dark:border-cyan-900/40 rounded-xl px-4 py-3 font-mono text-xs text-cyan-600 dark:text-cyan-400 flex items-center gap-3">
                     <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
                     <span className="text-cyan-600 font-bold">[STEP {latest.step}/7]</span>
                     <span className="text-cyan-700 dark:text-cyan-300">{latest.detail || latest.title}</span>
@@ -1105,7 +1107,7 @@ export default function Dashboard() {
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2"
+                  className="bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2"
                 >
                   <div className="flex items-center justify-between text-[11px] font-mono">
                     <span className="text-cyan-600 dark:text-cyan-400 font-bold flex items-center gap-2">
@@ -1135,7 +1137,7 @@ export default function Dashboard() {
                       key={cveId}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="text-[10px] font-mono font-extrabold px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1"
+                      className="text-[10px] font-mono font-extrabold px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center gap-1"
                     >
                       <BookOpen size={9} />
                       {cveId}
@@ -1147,11 +1149,11 @@ export default function Dashboard() {
               {/* ── AI Terminal (analysis text) ────────────────────────────── */}
               {aiDisplayText && (
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="relative">
-                  <div className="flex items-center gap-2 bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-t-xl px-4 py-2.5 border-b-0">
+                  <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-t-xl px-4 py-2.5 border-b-0">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
-                    <span className="ml-4 text-[10px] font-mono text-slate-500 dark:text-slate-600 tracking-widest uppercase">
+                    <span className="ml-4 text-[10px] font-mono text-slate-400 tracking-widest uppercase">
                       cyberdefense-ai | priority-attack-vectors | {new Date().toLocaleTimeString()}
                     </span>
                     {aiState === 'running' && aiDisplayText && (
@@ -1167,7 +1169,7 @@ export default function Dashboard() {
                   </div>
                   <div
                     ref={terminalRef}
-                    className="bg-black/90 border border-slate-200 dark:border-slate-800 rounded-b-xl max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full"
+                    className="bg-black/90 border border-slate-800 rounded-b-xl max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full"
                     style={{ padding: '22px', minHeight: '280px' }}
                   >
                     <pre
@@ -1232,19 +1234,19 @@ export default function Dashboard() {
               </div>
 
               {/* Filter Toolbar */}
-              <div className="bg-[#111827]/80 backdrop-blur border border-slate-800/80 p-4 rounded-xl shadow-lg flex flex-wrap gap-4 items-center justify-between">
+              <div className="bg-white dark:bg-[#111827]/80 backdrop-blur border border-slate-200 dark:border-slate-800/80 p-4 rounded-xl shadow-lg flex flex-wrap gap-4 items-center justify-between">
                 <div className="flex flex-wrap gap-4 items-center">
-                  <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-500 dark:text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                     <Filter size={14} className="text-blue-600 dark:text-blue-400" />
                     <span>Severity:</span>
-                    <div className="flex rounded-lg bg-slate-950 p-0.5 border border-slate-200 dark:border-slate-800/60">
+                    <div className="flex rounded-lg bg-slate-100 dark:bg-slate-950 p-0.5 border border-slate-200 dark:border-slate-800/60">
                       {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'].map(sev => (
                         <button
                           key={sev}
                           onClick={() => setFilterSeverity(sev)}
                           className={`px-2.5 py-1.5 rounded-md text-[10px] font-extrabold uppercase transition-all duration-200 ${filterSeverity === sev
                             ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-500/30'
-                            : 'text-slate-500 dark:text-slate-500 hover:text-slate-300'
+                            : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
                             }`}
                         >
                           {sev}
@@ -1253,16 +1255,16 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-500 dark:text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                     <span>Status:</span>
-                    <div className="flex rounded-lg bg-slate-950 p-0.5 border border-slate-200 dark:border-slate-800/60">
+                    <div className="flex rounded-lg bg-slate-100 dark:bg-slate-950 p-0.5 border border-slate-200 dark:border-slate-800/60">
                       {['ALL', 'UNRESOLVED', 'ACKNOWLEDGED', 'RESOLVED'].map(stat => (
                         <button
                           key={stat}
                           onClick={() => setFilterStatus(stat)}
                           className={`px-2.5 py-1.5 rounded-md text-[10px] font-extrabold uppercase transition-all duration-200 ${filterStatus === stat
                             ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-500/30'
-                            : 'text-slate-500 dark:text-slate-500 hover:text-slate-300'
+                            : 'text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300'
                             }`}
                         >
                           {stat}
@@ -1277,7 +1279,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 max-h-[900px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-slate-950/40 [&::-webkit-scrollbar-thumb]:bg-slate-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-700">
+              <div className="flex flex-col gap-3 max-h-[900px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-slate-200/60 dark:[&::-webkit-scrollbar-track]:bg-slate-950/40 [&::-webkit-scrollbar-thumb]:bg-slate-400 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-500 dark:hover:[&::-webkit-scrollbar-thumb]:bg-slate-600">
                 {filteredRisks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-500 dark:text-slate-500">
                     <Shield size={40} className="opacity-30" />
@@ -1311,7 +1313,7 @@ export default function Dashboard() {
                   <TrendingUp className="text-amber-500" size={20} />
                   Prioritized Attack Vectors
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-600 dark:text-slate-400 mt-0.5">Most Vulnerable — ranked by composite risk</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Most Vulnerable — ranked by composite risk</p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-600 mt-1 font-mono">
                   Click any bar to highlight &amp; expand that vulnerability →
                 </p>
@@ -1345,8 +1347,8 @@ export default function Dashboard() {
                           }
                         }}
                       >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} vertical={true} />
-                        <XAxis type="number" domain={[0, 100]} stroke="#334155" fontSize={10} fontWeight="bold" tickLine={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1e293b' : '#e2e8f0'} horizontal={false} vertical={true} />
+                        <XAxis type="number" domain={[0, 100]} stroke={isDark ? '#334155' : '#94a3b8'} fontSize={10} fontWeight="bold" tickLine={false} />
                         <YAxis
                           dataKey="cveId"
                           type="category"
@@ -1355,7 +1357,7 @@ export default function Dashboard() {
                           tickLine={false}
                           axisLine={false}
                         />
-                        <Tooltip content={<CustomBarTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                        <Tooltip content={<CustomBarTooltip />} cursor={{ fill: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }} />
                         <Bar
                           dataKey="riskScore"
                           radius={[0, 6, 6, 0]}
@@ -1367,7 +1369,7 @@ export default function Dashboard() {
                               key={`cell-${index}`}
                               fill={
                                 selectedCveId === entry.cveId
-                                  ? '#ffffff'
+                                  ? (isDark ? '#ffffff' : '#1d4ed8')
                                   : entry.riskScore > 80 ? '#ef4444'
                                     : entry.riskScore > 60 ? '#f59e0b'
                                       : '#3b82f6'
