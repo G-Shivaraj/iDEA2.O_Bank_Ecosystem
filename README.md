@@ -102,5 +102,5 @@ No real bank transaction or network packet data was used.
 
 ## Contact
 Team Name: **Sarathi**
-Institute: [C.R.Rao Advanced Institute of Mathematics, Statistics and Computer Science (AIMSCS)]
+Institute: C.R.Rao Advanced Institute of Mathematics, Statistics and Computer Science (AIMSCS)
 *iDEA 2.0 Phase 2 Submission*
