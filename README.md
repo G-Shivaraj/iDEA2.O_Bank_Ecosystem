@@ -1,18 +1,18 @@
 <div align="center">
+
 <br/>
-██████╗ ██╗   ██╗██████╗ ███████╗██████╗ ██████╗ ███████╗███████╗███████╗███╗   ██╗███████╗███████╗    █████╗ ██╗
-██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔════╝██╔════╝██╔════╝████╗  ██║██╔════╝██╔════╝   ██╔══██╗██║
-██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝██║  ██║█████╗  █████╗  █████╗  ██╔██╗ ██║███████╗█████╗     ███████║██║
-██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗██║  ██║██╔══╝  ██╔══╝  ██╔══╝  ██║╚██╗██║╚════██║██╔══╝     ██╔══██║██║
-╚██████╗   ██║   ██████╔╝███████╗██║  ██║██████╔╝███████╗██║     ███████╗██║ ╚████║███████║███████╗   ██║  ██║██║
- ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝     ╚══════╝╚═╝  ╚═══╝╚══════╝╚══════╝   ╚═╝  ╚═╝╚═╝
-Predictive Cyber Defense & Autonomous Remediation
-A Generative AI Framework for Banking Security
-<br/>
-<br/>
-Shifting banking security from reactive response to proactive, AI-driven threat prediction and containment.
-<br/>
-</div>
+
+```
+███████╗ █████╗ ██████╗  █████╗ ████████╗██╗  ██╗██╗
+██╔════╝██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██║  ██║██║
+███████╗███████║██████╔╝███████║   ██║   ███████║██║
+╚════██║██╔══██║██╔══██╗██╔══██║   ██║   ██╔══██║██║
+███████║██║  ██║██║  ██║██║  ██║   ██║   ██║  ██║██║
+╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝
+```
+
+### **Predictive Cyber Defense & Autonomous Remediation**
+*A Generative AI Framework for Banking Security*
 
 <br/>
 
@@ -23,19 +23,25 @@ Shifting banking security from reactive response to proactive, AI-driven threat 
 [![Gemini](https://img.shields.io/badge/Google_Gemini-4285F4?style=flat-square&logo=google&logoColor=white)](https://deepmind.google/gemini)
 [![iDEA 2.0](https://img.shields.io/badge/iDEA_2.0-Phase_2-orange?style=flat-square)](/)
 
+<br/>
+
+> **Shifting banking security from reactive response to proactive, AI-driven threat prediction and containment.**
+
+<br/>
+
 </div>
 
----
 
-## 🎯 Problem Statement
+
+##  Problem Statement
 
 **PS10 — Using Generative AI for Attack Prediction and Remediation**
 
 Modern banks face an asymmetric threat landscape: attackers need to succeed once, defenders must succeed every time. Sarathi flips this equation by **predicting attacks before they happen**, autonomously generating remediation playbooks, and safely validating security changes inside a 3D Digital Twin — all powered by a live knowledge graph and Gemini AI.
 
----
 
-## ✨ Core Capabilities
+
+##  Core Capabilities
 
 | Module | Description |
 |--------|-------------|
@@ -46,9 +52,9 @@ Modern banks face an asymmetric threat landscape: attackers need to succeed once
 | 🏛️ **3D Digital Twin** | Immersive Three.js simulation — safely run red team attacks and validate security changes |
 | 🎙️ **Voice Narration** | Web Speech API narrates threat findings in real-time inside the SOC dashboard |
 
----
 
-## 🏗️ Architecture
+
+##  Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -78,9 +84,9 @@ Modern banks face an asymmetric threat landscape: attackers need to succeed once
 └──────────────────────────┴──────────────────────────────────────┘
 ```
 
----
 
-## 🗂️ Project Structure
+
+##  Project Structure
 
 ```
 sarathi-cyberdefense/
@@ -106,9 +112,9 @@ sarathi-cyberdefense/
     └── vite.config.js
 ```
 
----
 
-## 🚀 Getting Started
+
+##  Getting Started
 
 ### Prerequisites
 
@@ -161,11 +167,11 @@ npm install
 npm run dev
 ```
 
-> 🖥️ Dashboard available at **http://localhost:5173**
+>  Dashboard available at **http://localhost:5173**
 
----
 
-## 📊 Model Performance
+
+##  Model Performance
 
 ### Hybrid Risk Scoring Engine
 *Random Forest + Deterministic Formula*
@@ -184,11 +190,11 @@ npm run dev
 | Top Paths Returned | **Top 5** lateral movement routes |
 | Weighting Strategy | Inverse asset criticality (path of least resistance) |
 
-> ⚠️ **Note:** Models are trained on a POC-scale curated dataset (12 records) for demonstration. Production deployment requires retraining on **10,000+ labeled records**.
+>  **Note:** Models are trained on a POC-scale curated dataset (12 records) for demonstration. Production deployment requires retraining on **10,000+ labeled records**.
 
----
 
-## 🗄️ Dataset & Compliance
+
+##  Dataset & Compliance
 
 All **internal banking telemetry is 100% synthetic**, generated via `demo_data.py` to comply with:
 
@@ -209,9 +215,9 @@ The synthetic environment simulates a realistic banking infrastructure:
 | 🚨 CISA KEV | Known Exploited Vulnerabilities Catalog |
 | 🛡️ MITRE ATT&CK | Enterprise Tactics & Techniques Framework |
 
----
 
-## ⚠️ Known Limitations
+
+##  Known Limitations
 
 | Area | Current State | Production Path |
 |------|--------------|-----------------|
@@ -221,12 +227,17 @@ The synthetic environment simulates a realistic banking infrastructure:
 | **Auth** | No RBAC or MFA on dashboard | Implement enterprise SSO + RBAC |
 | **Digital Twin** | Visualises graph state; no live PCAP | Integrate raw packet capture feeds |
 
----
 
-## 👥 Team Sarathi
 
-> *C.R. Rao Advanced Institute of Mathematics, Statistics and Computer Science (AIMSCS)*
-> *iDEA 2.0 — Phase 2 Submission*
+## Team Information
+
+**Team Name:** Sarathi
+
+**Institute:** C.R. Rao Advanced Institute of Mathematics, Statistics and Computer Science (AIMSCS)
+
+**Competition:** iDEA 2.0 – Phase 2 Submission
+
+</div>
 
 <br/>
 
@@ -239,20 +250,16 @@ The synthetic environment simulates a realistic banking infrastructure:
 
 <br/>
 
----
+
 
 <div align="center">
 
 *Together, we transformed our proposal from a concept into a working, enterprise-grade cyber defense platform —*
 *shifting banking security from reactive response to proactive, AI-driven threat prediction and containment.*
 
-<br/>
 
-**Team Sarathi** · AIMSCS · iDEA 2.0
 
-<br/>
 
----
 
 ## 🔗 Submission Links
 
@@ -266,6 +273,5 @@ The synthetic environment simulates a realistic banking infrastructure:
 | 📊 | **D5 Deck** | [Presentation Deck (Google Slides)](https://docs.google.com/presentation/d/1OSXQh7AITO2wT7rgY14yUm0RLxXPU0_s/edit?usp=sharing&ouid=111282...) |
 | 🎥 | **D5 Video** | [youtube.com/watch?v=auKhvGqp1oY](https://www.youtube.com/watch?v=auKhvGqp1oY) |
 
-> 📅 *Submitted: 31/05/2026, 23:50:31*
 
 </div>
