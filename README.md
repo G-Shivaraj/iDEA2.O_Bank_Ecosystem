@@ -11,8 +11,8 @@
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝
 ```
 
-### **Predictive Cyber Defense & Autonomous Remediation**
-*A Generative AI Framework for Banking Security*
+### **Cyberdefense AI**
+*A Generative AI Framework for Banking Security & Remidiation*
 
 <br/>
 
