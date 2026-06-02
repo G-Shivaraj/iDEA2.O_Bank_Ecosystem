@@ -265,12 +265,12 @@ The synthetic environment simulates a realistic banking infrastructure:
 
 | # | Deliverable | Link |
 |---|-------------|------|
-| 📄 | **D1 Brief** | [Project Brief (Google Docs)](https://docs.google.com/document/d/19Vu1fcX_gO3-Jz-0KiiaWzlZVtGu7ChE/edit?usp=sharing&ouid=102470806441l...) |
+| 📄 | **D1 Brief** | [Project Brief (Google Docs)](https://docs.google.com/document/d/19Vu1fcX_gO3-Jz-0KiiaWzlZVtGu7ChE/edit?usp=sharing&ouid=102470806441105523356&rtpof=true&sd=true) |
 | 🌐 | **D2 Deployed App** | [i-dea-2-o-bank-ecosystem.vercel.app](https://i-dea-2-o-bank-ecosystem.vercel.app/) |
 | 🎬 | **D2 Demo Video** | [youtu.be/4msktUI9Dho](https://youtu.be/4msktUI9Dho) |
-| 🗂️ | **D3 Architecture** | [Architecture Document (Google Docs)](https://docs.google.com/document/d/1vkL1Wx6Y0kl5H0ZtFIV_BfegfOmCmrNh/edit?usp=sharing&ouid=102...) |
-| 💻 | **D4 GitHub** | [G-Shivaraj/iDEA2.0_Bank_Ecosystem](https://github.com/G-Shivaraj/iDEA2.0_Bank_Ecosystem) |
-| 📊 | **D5 Deck** | [Presentation Deck (Google Slides)](https://docs.google.com/presentation/d/1OSXQh7AITO2wT7rgY14yUm0RLxXPU0_s/edit?usp=sharing&ouid=111282...) |
+| 🗂️ | **D3 Architecture** | [Architecture Document (Google Docs)](https://docs.google.com/document/d/1vkL1Wx6Y0kI5H0ZtFIV_Bfegf0mCmrNh/edit?usp=sharing&ouid=102470806441105523356&rtpof=true&sd=true) |
+| 💻 | **D4 GitHub** | [G-Shivaraj/iDEA2.0_Bank_Ecosystem](https://github.com/G-Shivaraj/iDEA2.O_Bank_Ecosystem) |
+| 📊 | **D5 Deck** | [Presentation Deck (Google Slides)](https://docs.google.com/presentation/d/10SXQh7AITO2wT7rgY14yUm0RLxXPU0_s/edit?slide=id.p1#slide=id.p1) |
 | 🎥 | **D5 Video** | [youtube.com/watch?v=auKhvGqp1oY](https://www.youtube.com/watch?v=auKhvGqp1oY) |
 
 
