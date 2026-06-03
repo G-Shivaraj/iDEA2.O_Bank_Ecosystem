@@ -25,214 +25,136 @@
 </div>
 
 
+## Problem Statement
 
-##  Problem Statement
+This project addresses **PS10: Using Generative AI for Attack Prediction and Remediation**. Sarathi predicts cyberattacks before they occur by combining a live Neo4j security knowledge graph, ML-based risk forecasting, and Google Gemini AI to autonomously generate remediation playbooks — shifting banking security from reactive response to proactive, AI-driven threat prediction and containment.
 
-**PS10 — Using Generative AI for Attack Prediction and Remediation**
+## Live Demo
 
-Modern banks face an asymmetric threat landscape: attackers need to succeed once, defenders must succeed every time. Sarathi flips this equation by **predicting attacks before they happen**, autonomously generating remediation playbooks, and safely validating security changes inside a 3D Digital Twin — all powered by a live knowledge graph and Gemini AI.
+🌐 **Deployed App:** [i-dea-2-o-bank-ecosystem.vercel.app](https://i-dea-2-o-bank-ecosystem.vercel.app/)
 
+🎥 **Demo Video:** [youtu.be/4msktUI9Dho](https://youtu.be/4msktUI9Dho)
 
+## Tech Stack
 
-##  Core Capabilities
+- Python 3.9+
+- React 18 + Vite (SOC dashboard frontend)
+- FastAPI + Uvicorn (backend API server)
+- Neo4j Aura DB (live security knowledge graph)
+- Google Gemini SDK — Flash 3.5 / Flash-Lite / 2.5 Flash Cascade (generative AI)
+- Scikit-learn — Random Forest (ML risk scoring)
+- NetworkX — Dijkstra algorithm (attack path analysis)
+- Three.js + React Three Fiber (3D Digital Twin simulation)
+- Web Speech API (real-time voice narration)
+- NVD, EPSS, CISA KEV, MITRE ATT&CK (external threat intelligence feeds)
+- Tailwind CSS (styling)
 
-| Module | Description |
-|--------|-------------|
-| 🕸️ **Live Security Knowledge Graph** | Neo4j-powered graph of banking infrastructure across 4 security zones — updated continuously |
-| 🤖 **ML Risk Forecasting** | Random Forest classifier scores every vulnerability using CVSS, EPSS, KEV status & asset criticality |
-| 🔍 **Attack Path Analysis** | Dijkstra-based shortest-path engine (NetworkX) finds top-5 lateral movement routes up to 6 hops deep |
-| 📋 **Autonomous Remediation** | Gemini generates step-by-step playbooks tailored to each threat, with root cause analysis |
-| 🏛️ **3D Digital Twin** | Immersive Three.js simulation — safely run red team attacks and validate security changes |
-| 🎙️ **Voice Narration** | Web Speech API narrates threat findings in real-time inside the SOC dashboard |
+## How to Run Locally
 
+1. Clone the repository:
+   ```
+   git clone https://github.com/G-Shivaraj/iDEA2.O_Bank_Ecosystem
+   cd sarathi-cyberdefense
+   ```
 
+2. Configure environment variables — copy `.env.example` to `.env` and fill in your credentials:
+   ```
+   NEO4J_URI=neo4j+s://your-database-id.databases.neo4j.io
+   NEO4J_USERNAME=neo4j
+   NEO4J_PASSWORD=your-aura-password
+   GEMINI_API_KEY=your-google-gemini-key
+   ```
 
-##  Architecture
+3. Install backend dependencies:
+   ```
+   cd backend
+   pip install -r requirements.txt
+   ```
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        SARATHI PLATFORM                          │
-├──────────────────────────┬──────────────────────────────────────┤
-│       FRONTEND           │              BACKEND                  │
-│                          │                                       │
-│  React 18 + Vite         │   FastAPI + Uvicorn                  │
-│  Tailwind CSS            │   Pydantic (validation)              │
-│  Three.js (Digital Twin) │   Streaming API responses            │
-│  React Three Fiber       │                                       │
-│  Web Speech API          │   ┌──────────────────────────────┐   │
-│                          │   │     ML / AI LAYER            │   │
-│                          │   │  Random Forest (scikit-learn) │   │
-│                          │   │  NetworkX (Dijkstra paths)    │   │
-│                          │   │  Google Gemini SDK           │   │
-│                          │   │  (Flash 3.5 / Flash-Lite /   │   │
-│                          │   │   2.5 Flash Cascade)         │   │
-│                          │   └──────────────────────────────┘   │
-│                          │                                       │
-│                          │   ┌──────────────────────────────┐   │
-│                          │   │     DATA LAYER               │   │
-│                          │   │  Neo4j Aura DB (Graph)       │   │
-│                          │   │  NVD + EPSS + CISA KEV feeds │   │
-│                          │   │  MITRE ATT&CK Framework      │   │
-│                          │   └──────────────────────────────┘   │
-└──────────────────────────┴──────────────────────────────────────┘
-```
+4. Seed Neo4j with synthetic banking infrastructure:
+   ```
+   python demo_data.py
+   ```
 
+5. Launch the FastAPI backend server:
+   ```
+   python run.py
+   ```
+   Backend runs at `http://localhost:8000` — interactive API docs at `http://localhost:8000/docs`
 
+6. In a new terminal, install and start the frontend:
+   ```
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-##  Project Structure
+7. Open the dashboard at: `http://localhost:5173`
+
+## Project Structure
 
 ```
 sarathi-cyberdefense/
-│
 ├── backend/
-│   ├── run.py                  # FastAPI server entrypoint
-│   ├── demo_data.py            # Synthetic banking infrastructure seeder
+│   ├── run.py               — FastAPI server entrypoint
+│   ├── demo_data.py         — Synthetic banking infrastructure seeder
 │   ├── requirements.txt
-│   │
 │   ├── ml/
-│   │   ├── risk_scorer.py      # Random Forest risk classification
-│   │   └── attack_paths.py     # Dijkstra attack path analyzer (NetworkX)
-│   │
+│   │   ├── risk_scorer.py   — Random Forest risk classification
+│   │   └── attack_paths.py  — Dijkstra attack path analyzer (NetworkX)
 │   └── genai/
-│       ├── playbook_gen.py     # Gemini remediation playbook generator
-│       └── rca_gen.py          # Root Cause Analysis generator
-│
+│       ├── playbook_gen.py  — Gemini remediation playbook generator
+│       └── rca_gen.py       — Root Cause Analysis generator
 └── frontend/
     ├── src/
     │   └── components/
-    │       └── twin/           # Three.js Cyber Digital Twin
+    │       └── twin/        — Three.js Cyber Digital Twin
     ├── package.json
     └── vite.config.js
 ```
 
+## Dataset
 
+All internal banking telemetry is **100% synthetic**, generated via `demo_data.py` to comply with the DPDP Act 2023 and RBI Data Localization Guidelines. The synthetic environment simulates:
 
-##  Getting Started
+- 4 Security Zones — DMZ, Middleware, Core, Management
+- 12 Key Assets — including Core Vault DB and SWIFT Gateway
+- Vulnerability records with CVSS scores, EPSS probabilities, and KEV status
+- Lateral movement attack paths across up to 6 hops
 
-### Prerequisites
+External threat intelligence is **100% real**, sourced from:
 
-- Python 3.9+
-- Node.js 18+
-- A [Neo4j Aura](https://neo4j.com/cloud/aura/) free-tier instance
-- A [Google Gemini API key](https://aistudio.google.com/)
+- NVD — National Vulnerability Database
+- EPSS — Exploit Prediction Scoring System
+- CISA KEV — Known Exploited Vulnerabilities Catalog
+- MITRE ATT&CK — Enterprise Tactics & Techniques Framework
 
-### 1 — Clone the Repository
+## Model Performance (on Synthetic Test Set)
 
-```bash
-git clone [repository-url]
-cd sarathi-cyberdefense
-```
+**Hybrid Risk Scoring Engine — Random Forest + Deterministic Formula:**
 
-### 2 — Configure Environment Variables
+- Evaluates CVSS, EPSS, KEV status, and Asset Criticality jointly
+- Stratifies vulnerabilities into CRITICAL → HIGH → MEDIUM → LOW tiers
+- Provides explainable prioritization for SOC analysts
 
-Copy `.env.example` to `.env` in the **root folder** and fill in your credentials:
+**Dijkstra Attack Path Analyzer — NetworkX Weighted Graph Pathfinding:**
 
-```env
-NEO4J_URI=neo4j+s://your-database-id.databases.neo4j.io
-NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=your-aura-password
-GEMINI_API_KEY=your-google-gemini-key
-```
+- Pathfinding Latency: Sub-millisecond
+- Max Hop Depth: 6 hops
+- Top Paths Returned: Top 5 lateral movement routes
+- Weighting Strategy: Inverse asset criticality (path of least resistance)
 
-### 3 — Start the Backend
+Note: Models are trained on a POC-scale curated dataset (12 records) for demonstration. Production deployment requires retraining on 10,000+ labeled records.
 
-```bash
-cd backend
-pip install -r requirements.txt
+## Known Limitations
 
-# Seed Neo4j with synthetic banking infrastructure
-python demo_data.py
+- Trained only on synthetic data (SIEM/EDR simulated); live Kafka stream integration required for production.
+- Graph is loaded in batch on startup; real-time event streaming pipeline not yet implemented.
+- ML model uses a 12-record POC dataset; needs retraining on 10,000+ labeled records for production accuracy.
+- No RBAC or MFA on the dashboard; enterprise SSO + RBAC required for deployment.
+- Digital Twin visualises graph state only; no live PCAP integration yet.
 
-# Launch the FastAPI server
-python run.py
-```
-
-> 📡 Backend runs at **http://localhost:8000**
-> 📖 Interactive API docs at **http://localhost:8000/docs**
-
-### 4 — Start the Frontend
-
-Open a new terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
->  Dashboard available at **http://localhost:5173**
-
-
-
-##  Model Performance
-
-### Hybrid Risk Scoring Engine
-*Random Forest + Deterministic Formula*
-
-- Evaluates **CVSS**, **EPSS**, **KEV status**, and **Asset Criticality** jointly
-- Deterministically stratifies vulnerabilities into `CRITICAL` → `HIGH` → `MEDIUM` → `LOW` tiers
-- Enables accurate, explainable prioritization for SOC analysts
-
-### Dijkstra Attack Path Analyzer
-*NetworkX — Weighted Graph Pathfinding*
-
-| Metric | Result |
-|--------|--------|
-| Pathfinding Latency | **Sub-millisecond** |
-| Max Hop Depth | **6 hops** |
-| Top Paths Returned | **Top 5** lateral movement routes |
-| Weighting Strategy | Inverse asset criticality (path of least resistance) |
-
->  **Note:** Models are trained on a POC-scale curated dataset (12 records) for demonstration. Production deployment requires retraining on **10,000+ labeled records**.
-
-
-
-##  Dataset & Compliance
-
-All **internal banking telemetry is 100% synthetic**, generated via `demo_data.py` to comply with:
-
-- 🇮🇳 **DPDP Act 2023** — Digital Personal Data Protection Act
-- 🏦 **RBI Data Localization Guidelines**
-
-The synthetic environment simulates a realistic banking infrastructure:
-
-- **4 Security Zones** — DMZ, Middleware, Core, Management
-- **12 Key Assets** — including Core Vault DB and SWIFT Gateway
-
-**External threat intelligence is 100% real:**
-
-| Feed | Source |
-|------|--------|
-| 🔍 NVD | National Vulnerability Database |
-| 📊 EPSS | Exploit Prediction Scoring System |
-| 🚨 CISA KEV | Known Exploited Vulnerabilities Catalog |
-| 🛡️ MITRE ATT&CK | Enterprise Tactics & Techniques Framework |
-
-
-
-##  Known Limitations
-
-| Area | Current State | Production Path |
-|------|--------------|-----------------|
-| **Data** | Synthetic internal telemetry (SIEM/EDR simulated) | Integrate live Kafka streams |
-| **Ingestion** | Batch graph load on startup | Real-time event streaming pipeline |
-| **ML Scale** | 12-record POC dataset | Retrain on 10,000+ labeled records |
-| **Auth** | No RBAC or MFA on dashboard | Implement enterprise SSO + RBAC |
-| **Digital Twin** | Visualises graph state; no live PCAP | Integrate raw packet capture feeds |
-
-
-
-## Team Information
-
-**Team Name:** Sarathi
-
-**Institute:** C.R. Rao Advanced Institute of Mathematics, Statistics and Computer Science (AIMSCS)
-
-**Competition:** iDEA 2.0 – Phase 2 Submission
-
-</div>
-
-<br/>
+## Team
 
 | Member | Role |
 |--------|------|
@@ -241,20 +163,17 @@ The synthetic environment simulates a realistic banking infrastructure:
 | **Taufeeq** | Full-Stack Implementation — React SOC dashboard, Three.js Digital Twin, FastAPI backend & documentation |
 | **Varun** | Python Backend Infrastructure — Data ingestion pipelines & system testing |
 
-<br/>
+## Contact
 
+**Team Name:** Sarathi
+
+**Institute:** C.R. Rao Advanced Institute of Mathematics, Statistics and Computer Science (AIMSCS)
+
+**iDEA 2.0 — Phase 2 Submission**
 
 
 <div align="center">
-
-*Together, we transformed our proposal from a concept into a working, enterprise-grade cyber defense platform —*
-*shifting banking security from reactive response to proactive, AI-driven threat prediction and containment.*
-
-
-
-
-
-## 🔗 Submission Links
+Submission Links
 
 | # | Deliverable | Link |
 |---|-------------|------|
@@ -265,6 +184,5 @@ The synthetic environment simulates a realistic banking infrastructure:
 | 💻 | **D4 GitHub** | [G-Shivaraj/iDEA2.0_Bank_Ecosystem](https://github.com/G-Shivaraj/iDEA2.O_Bank_Ecosystem) |
 | 📊 | **D5 Deck** | [Presentation Deck (Google Slides)](https://docs.google.com/presentation/d/10SXQh7AITO2wT7rgY14yUm0RLxXPU0_s/edit?slide=id.p1#slide=id.p1) |
 | 🎥 | **D5 Video** | [youtube.com/watch?v=auKhvGqp1oY](https://www.youtube.com/watch?v=auKhvGqp1oY) |
-
 
 </div>
