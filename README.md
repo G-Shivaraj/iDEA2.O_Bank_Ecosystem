@@ -2,17 +2,10 @@
 
 <br/>
 
-```
-███████╗ █████╗ ██████╗  █████╗ ████████╗██╗  ██╗██╗
-██╔════╝██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██║  ██║██║
-███████╗███████║██████╔╝███████║   ██║   ███████║██║
-╚════██║██╔══██║██╔══██╗██╔══██║   ██║   ██╔══██║██║
-███████║██║  ██║██║  ██║██║  ██║   ██║   ██║  ██║██║
-╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝
-```
+
 
 ### **Cyberdefense AI**
-*A Generative AI Framework for Banking Security & Remidiation*
+**Title:** *A Generative AI Framework for Predictive Cyber Defense and Autonomous Remediation in Banking Systems*
 
 <br/>
 
